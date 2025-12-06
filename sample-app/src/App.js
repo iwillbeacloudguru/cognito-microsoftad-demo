@@ -14,6 +14,8 @@ function App() {
   const [totpSecret, setTotpSecret] = useState('');
   const [totpCode, setTotpCode] = useState('');
   const [totpRegistered, setTotpRegistered] = useState(false);
+  const [showTotpVerify, setShowTotpVerify] = useState(false);
+  const [totpVerifyCode, setTotpVerifyCode] = useState('');
   
   useEffect(() => {
     checkPasskeySupport();
@@ -426,8 +428,20 @@ function App() {
     );
   }
 
+  const verifyTotpLogin = () => {
+    if (totpVerifyCode.length !== 6) {
+      alert('Please enter a 6-digit code');
+      return;
+    }
+    setShowTotpVerify(false);
+    setTotpVerifyCode('');
+    auth.signinRedirect();
+  };
+
   const handleSignIn = async () => {
-    if (passkeyRegistered) {
+    if (totpRegistered) {
+      setShowTotpVerify(true);
+    } else if (passkeyRegistered) {
       const passkeyAuth = await authenticateWithPasskey();
       if (passkeyAuth) {
         auth.signinRedirect();
@@ -470,9 +484,44 @@ function App() {
           className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white py-3 rounded-lg font-medium hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200"
           onClick={handleSignIn}
         >
-          {passkeyRegistered ? '🔑 Sign In with Passkey' : 'Sign In with Cognito'}
+          {totpRegistered ? '📱 Sign In with TOTP' : passkeyRegistered ? '🔑 Sign In with Passkey' : 'Sign In with Cognito'}
         </button>
       </div>
+
+      {showTotpVerify && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full">
+            <h3 className="text-xl font-bold text-gray-800 mb-4">📱 Enter Authenticator Code</h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Open your authenticator app and enter the 6-digit code
+            </p>
+            <input
+              type="text"
+              placeholder="000000"
+              maxLength="6"
+              value={totpVerifyCode}
+              onChange={(e) => setTotpVerifyCode(e.target.value.replace(/\D/g, ''))}
+              className="w-full border-2 border-gray-300 rounded-lg px-4 py-3 mb-4 text-center text-2xl font-mono tracking-widest focus:border-indigo-500 focus:outline-none"
+              autoFocus
+            />
+            <div className="flex gap-3">
+              <button
+                onClick={verifyTotpLogin}
+                disabled={totpVerifyCode.length !== 6}
+                className="flex-1 bg-indigo-500 text-white py-2 rounded-lg hover:bg-indigo-600 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+              >
+                Verify & Sign In
+              </button>
+              <button
+                onClick={() => { setShowTotpVerify(false); setTotpVerifyCode(''); }}
+                className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg hover:bg-gray-300 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

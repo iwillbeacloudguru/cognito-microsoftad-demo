@@ -43,14 +43,64 @@ function App() {
     setShowTotpSetup(true);
   };
 
-  const verifyAndRegisterTotp = () => {
+  const generateTOTP = (secret) => {
+    const base32Decode = (str) => {
+      const base32Chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+      let bits = '';
+      for (let i = 0; i < str.length; i++) {
+        const val = base32Chars.indexOf(str.charAt(i).toUpperCase());
+        if (val === -1) continue;
+        bits += val.toString(2).padStart(5, '0');
+      }
+      const bytes = [];
+      for (let i = 0; i + 8 <= bits.length; i += 8) {
+        bytes.push(parseInt(bits.substr(i, 8), 2));
+      }
+      return new Uint8Array(bytes);
+    };
+
+    const hmacSha1 = async (key, message) => {
+      const cryptoKey = await crypto.subtle.importKey(
+        'raw', key, { name: 'HMAC', hash: 'SHA-1' }, false, ['sign']
+      );
+      return await crypto.subtle.sign('HMAC', cryptoKey, message);
+    };
+
+    return (async () => {
+      const epoch = Math.floor(Date.now() / 1000);
+      const time = Math.floor(epoch / 30);
+      const timeBytes = new ArrayBuffer(8);
+      const timeView = new DataView(timeBytes);
+      timeView.setUint32(4, time, false);
+
+      const keyBytes = base32Decode(secret);
+      const hmac = await hmacSha1(keyBytes, timeBytes);
+      const hmacArray = new Uint8Array(hmac);
+      
+      const offset = hmacArray[hmacArray.length - 1] & 0x0f;
+      const code = (
+        ((hmacArray[offset] & 0x7f) << 24) |
+        ((hmacArray[offset + 1] & 0xff) << 16) |
+        ((hmacArray[offset + 2] & 0xff) << 8) |
+        (hmacArray[offset + 3] & 0xff)
+      ) % 1000000;
+      
+      return code.toString().padStart(6, '0');
+    })();
+  };
+
+  const verifyAndRegisterTotp = async () => {
     if (totpCode.length !== 6) {
       alert('Please enter a 6-digit code');
       return;
     }
 
-    // In production, verify the TOTP code with backend
-    // For demo, we'll accept any 6-digit code
+    const validCode = await generateTOTP(totpSecret);
+    if (totpCode !== validCode) {
+      alert('Invalid code. Please try again.');
+      return;
+    }
+
     localStorage.setItem('totp_registered', 'true');
     localStorage.setItem('totp_secret', totpSecret);
     setTotpRegistered(true);
@@ -428,11 +478,24 @@ function App() {
     );
   }
 
-  const verifyTotpLogin = () => {
+  const verifyTotpLogin = async () => {
     if (totpVerifyCode.length !== 6) {
       alert('Please enter a 6-digit code');
       return;
     }
+
+    const storedSecret = localStorage.getItem('totp_secret');
+    if (!storedSecret) {
+      alert('TOTP not configured');
+      return;
+    }
+
+    const validCode = await generateTOTP(storedSecret);
+    if (totpVerifyCode !== validCode) {
+      alert('Invalid code. Please check your authenticator app.');
+      return;
+    }
+
     setShowTotpVerify(false);
     setTotpVerifyCode('');
     auth.signinRedirect();

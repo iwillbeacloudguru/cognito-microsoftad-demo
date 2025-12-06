@@ -11,9 +11,6 @@ const cognitoAuthConfig = {
   redirect_uri: "https://demo.nttdata-cs.com",
   response_type: "code",
   scope: "email openid profile",
-  extraQueryParams: {
-    acr_values: "urn:amazon:cognito:mfa"
-  },
   automaticSilentRenew: true,
   loadUserInfo: true,
 };

@@ -6,7 +6,15 @@ function App() {
   const auth = useAuth();
   const [authStage, setAuthStage] = useState('idle');
   const [mfaInfo, setMfaInfo] = useState(null);
+  const [showPasskeySetup, setShowPasskeySetup] = useState(false);
+  const [passkeyRegistered, setPasskeyRegistered] = useState(false);
+  const [passkeySupported, setPasskeySupported] = useState(false);
   
+  useEffect(() => {
+    checkPasskeySupport();
+    checkPasskeyRegistration();
+  }, []);
+
   useEffect(() => {
     if (auth.isLoading) {
       const urlParams = new URLSearchParams(window.location.search);
@@ -22,6 +30,109 @@ function App() {
       setAuthStage('idle');
     }
   }, [auth.isLoading, auth.isAuthenticated]);
+
+  const checkPasskeySupport = () => {
+    const supported = window.PublicKeyCredential !== undefined && 
+                     navigator.credentials !== undefined;
+    setPasskeySupported(supported);
+  };
+
+  const checkPasskeyRegistration = () => {
+    const registered = localStorage.getItem('passkey_registered') === 'true';
+    setPasskeyRegistered(registered);
+  };
+
+  const registerPasskey = async () => {
+    if (!passkeySupported) {
+      alert('Passkeys are not supported in this browser');
+      return;
+    }
+
+    try {
+      const challenge = new Uint8Array(32);
+      window.crypto.getRandomValues(challenge);
+
+      const publicKeyCredentialCreationOptions = {
+        challenge,
+        rp: {
+          name: "Cognito MFA Demo",
+          id: window.location.hostname,
+        },
+        user: {
+          id: new Uint8Array(16),
+          name: auth.user?.profile?.email || "user@example.com",
+          displayName: auth.user?.profile?.email || "User",
+        },
+        pubKeyCredParams: [{alg: -7, type: "public-key"}],
+        authenticatorSelection: {
+          authenticatorAttachment: "platform",
+          userVerification: "required",
+        },
+        timeout: 60000,
+        attestation: "direct"
+      };
+
+      const credential = await navigator.credentials.create({
+        publicKey: publicKeyCredentialCreationOptions
+      });
+
+      if (credential) {
+        localStorage.setItem('passkey_registered', 'true');
+        localStorage.setItem('passkey_credential_id', credential.id);
+        setPasskeyRegistered(true);
+        setShowPasskeySetup(false);
+        setMfaInfo({
+          enabled: true,
+          method: 'passkey',
+          timestamp: new Date().toISOString()
+        });
+      }
+    } catch (error) {
+      console.error('Passkey registration failed:', error);
+      alert('Passkey registration failed: ' + error.message);
+    }
+  };
+
+  const authenticateWithPasskey = async () => {
+    if (!passkeyRegistered) {
+      alert('No passkey registered. Please register first.');
+      return;
+    }
+
+    try {
+      const challenge = new Uint8Array(32);
+      window.crypto.getRandomValues(challenge);
+
+      const credentialId = localStorage.getItem('passkey_credential_id');
+      
+      const publicKeyCredentialRequestOptions = {
+        challenge,
+        timeout: 60000,
+        userVerification: "required",
+        allowCredentials: credentialId ? [{
+          id: Uint8Array.from(atob(credentialId), c => c.charCodeAt(0)),
+          type: 'public-key',
+        }] : []
+      };
+
+      const assertion = await navigator.credentials.get({
+        publicKey: publicKeyCredentialRequestOptions
+      });
+
+      if (assertion) {
+        setMfaInfo({
+          enabled: true,
+          method: 'passkey',
+          timestamp: new Date().toISOString()
+        });
+        return true;
+      }
+    } catch (error) {
+      console.error('Passkey authentication failed:', error);
+      alert('Passkey authentication failed: ' + error.message);
+      return false;
+    }
+  };
 
   const detectMfaStatus = () => {
     if (!auth.user) return;
@@ -147,6 +258,18 @@ function App() {
               </div>
             )}
 
+            {passkeySupported && !passkeyRegistered && (
+              <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 mb-4">
+                <p className="text-xs text-purple-800 mb-2">🔑 Enhance your security with Passkey</p>
+                <button
+                  onClick={() => setShowPasskeySetup(true)}
+                  className="text-xs bg-purple-500 text-white px-3 py-1 rounded hover:bg-purple-600 transition-colors"
+                >
+                  Register Passkey
+                </button>
+              </div>
+            )}
+
             <div className="space-y-3 mt-4">
               <div className="bg-white border border-gray-200 rounded-lg p-4">
                 <div className="text-xs font-semibold text-gray-500 uppercase mb-2">ID Token</div>
@@ -170,9 +293,45 @@ function App() {
             🚪 Sign Out
           </button>
         </div>
+
+        {showPasskeySetup && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-2xl p-6 max-w-md w-full">
+              <h3 className="text-xl font-bold text-gray-800 mb-4">🔑 Register Passkey</h3>
+              <p className="text-sm text-gray-600 mb-4">
+                Use your device's biometric authentication (fingerprint, face ID) or security key as a second factor.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={registerPasskey}
+                  className="flex-1 bg-purple-500 text-white py-2 rounded-lg hover:bg-purple-600 transition-colors"
+                >
+                  Register Now
+                </button>
+                <button
+                  onClick={() => setShowPasskeySetup(false)}
+                  className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg hover:bg-gray-300 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
+
+  const handleSignIn = async () => {
+    if (passkeyRegistered) {
+      const passkeyAuth = await authenticateWithPasskey();
+      if (passkeyAuth) {
+        auth.signinRedirect();
+      }
+    } else {
+      auth.signinRedirect();
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center p-4">
@@ -186,12 +345,20 @@ function App() {
               <span>MFA-Protected Authentication</span>
             </p>
           </div>
+          {passkeySupported && (
+            <div className="mt-3 bg-purple-50 border border-purple-200 rounded-lg p-3">
+              <p className="text-xs text-purple-800 flex items-center justify-center gap-2">
+                <span>🔑</span>
+                <span>{passkeyRegistered ? 'Passkey Enabled' : 'Passkey Available'}</span>
+              </p>
+            </div>
+          )}
         </div>
         <button 
           className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white py-3 rounded-lg font-medium hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200"
-          onClick={() => auth.signinRedirect()}
+          onClick={handleSignIn}
         >
-          Sign In with Cognito
+          {passkeyRegistered ? '🔑 Sign In with Passkey' : 'Sign In with Cognito'}
         </button>
       </div>
     </div>

@@ -13,12 +13,10 @@ function App() {
 
   if (auth.isLoading) {
     return (
-      <div className="App">
-        <div className="loading-spinner">
-          <div className="spinner-border" role="status">
-            <span className="visually-hidden">Loading...</span>
-          </div>
-          <p className="mt-3">Authenticating...</p>
+      <div className="min-h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center">
+        <div className="text-center text-white">
+          <div className="spinner mx-auto mb-4"></div>
+          <p className="text-lg font-medium">Authenticating...</p>
         </div>
       </div>
     );
@@ -26,13 +24,16 @@ function App() {
 
   if (auth.error) {
     return (
-      <div className="App">
-        <div className="auth-card">
-          <div className="error-message">
-            <h5>⚠️ Authentication Error</h5>
-            <p className="mb-0">{auth.error.message}</p>
+      <div className="min-h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full">
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+            <h5 className="text-lg font-semibold text-yellow-800 mb-2">⚠️ Authentication Error</h5>
+            <p className="text-yellow-700 text-sm">{auth.error.message}</p>
           </div>
-          <button className="btn btn-custom btn-primary-custom mt-3" onClick={() => window.location.reload()}>
+          <button 
+            className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white py-3 rounded-lg font-medium hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200"
+            onClick={() => window.location.reload()}
+          >
             Try Again
           </button>
         </div>
@@ -42,37 +43,42 @@ function App() {
 
   if (auth.isAuthenticated) {
     return (
-      <div className="App">
-        <div className="auth-card">
-          <div className="auth-header">
-            <h1>✓ Authenticated</h1>
-            <p>Welcome back to your secure session</p>
+      <div className="min-h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-2xl w-full">
+          <div className="text-center mb-6">
+            <h1 className="text-3xl font-bold text-gray-800 mb-2">✓ Authenticated</h1>
+            <p className="text-gray-600">Welcome back to your secure session</p>
           </div>
 
-          <div className="user-info">
-            <div className="user-email">
-              <span>👤</span>
-              <span>{auth.user?.profile.email}</span>
-              <span className="badge-success ms-auto">Active</span>
+          <div className="bg-gray-50 rounded-xl p-6 mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <span className="text-2xl">👤</span>
+                <span className="text-lg font-medium text-gray-800">{auth.user?.profile.email}</span>
+              </div>
+              <span className="bg-green-500 text-white px-3 py-1 rounded-full text-xs font-medium">Active</span>
             </div>
 
-            <div className="token-section">
-              <div className="token-item">
-                <div className="token-label">ID Token</div>
-                <div className="token-value">{auth.user?.id_token}</div>
+            <div className="space-y-3 mt-4">
+              <div className="bg-white border border-gray-200 rounded-lg p-4">
+                <div className="text-xs font-semibold text-gray-500 uppercase mb-2">ID Token</div>
+                <div className="font-mono text-xs text-gray-700 break-all leading-relaxed">{auth.user?.id_token}</div>
               </div>
-              <div className="token-item">
-                <div className="token-label">Access Token</div>
-                <div className="token-value">{auth.user?.access_token}</div>
+              <div className="bg-white border border-gray-200 rounded-lg p-4">
+                <div className="text-xs font-semibold text-gray-500 uppercase mb-2">Access Token</div>
+                <div className="font-mono text-xs text-gray-700 break-all leading-relaxed">{auth.user?.access_token}</div>
               </div>
-              <div className="token-item">
-                <div className="token-label">Refresh Token</div>
-                <div className="token-value">{auth.user?.refresh_token}</div>
+              <div className="bg-white border border-gray-200 rounded-lg p-4">
+                <div className="text-xs font-semibold text-gray-500 uppercase mb-2">Refresh Token</div>
+                <div className="font-mono text-xs text-gray-700 break-all leading-relaxed">{auth.user?.refresh_token}</div>
               </div>
             </div>
           </div>
 
-          <button className="btn btn-custom btn-danger-custom" onClick={() => auth.removeUser()}>
+          <button 
+            className="w-full bg-red-500 text-white py-3 rounded-lg font-medium hover:bg-red-600 hover:-translate-y-0.5 transition-all duration-200"
+            onClick={() => auth.removeUser()}
+          >
             🚪 Sign Out
           </button>
         </div>
@@ -81,13 +87,16 @@ function App() {
   }
 
   return (
-    <div className="App">
-      <div className="auth-card">
-        <div className="auth-header">
-          <h1>🔐 Secure Login</h1>
-          <p>Sign in with your Microsoft AD credentials</p>
+    <div className="min-h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-gray-800 mb-2">🔐 Secure Login</h1>
+          <p className="text-gray-600">Sign in with your Microsoft AD credentials</p>
         </div>
-        <button className="btn btn-custom btn-primary-custom" onClick={() => auth.signinRedirect()}>
+        <button 
+          className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white py-3 rounded-lg font-medium hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200"
+          onClick={() => auth.signinRedirect()}
+        >
           Sign In with Cognito
         </button>
       </div>

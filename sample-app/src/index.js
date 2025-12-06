@@ -10,7 +10,12 @@ const cognitoAuthConfig = {
   client_id: "5tai0tc43qpu5fq4l8hukmh9q3",
   redirect_uri: "https://demo.nttdata-cs.com",
   response_type: "code",
-  scope: "email openid",
+  scope: "email openid profile",
+  extraQueryParams: {
+    acr_values: "urn:amazon:cognito:mfa"
+  },
+  automaticSilentRenew: true,
+  loadUserInfo: true,
 };
 
 const root = ReactDOM.createRoot(document.getElementById('root'));

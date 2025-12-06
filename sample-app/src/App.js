@@ -1,6 +1,7 @@
 import './App.css';
 import { useAuth } from "react-oidc-context";
 import { useState, useEffect } from 'react';
+import { QRCodeSVG } from 'qrcode.react';
 
 function App() {
   const auth = useAuth();
@@ -9,11 +10,62 @@ function App() {
   const [showPasskeySetup, setShowPasskeySetup] = useState(false);
   const [passkeyRegistered, setPasskeyRegistered] = useState(false);
   const [passkeySupported, setPasskeySupported] = useState(false);
+  const [showTotpSetup, setShowTotpSetup] = useState(false);
+  const [totpSecret, setTotpSecret] = useState('');
+  const [totpCode, setTotpCode] = useState('');
+  const [totpRegistered, setTotpRegistered] = useState(false);
   
   useEffect(() => {
     checkPasskeySupport();
     checkPasskeyRegistration();
+    checkTotpRegistration();
   }, []);
+
+  const checkTotpRegistration = () => {
+    const registered = localStorage.getItem('totp_registered') === 'true';
+    setTotpRegistered(registered);
+  };
+
+  const generateTotpSecret = () => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+    let secret = '';
+    for (let i = 0; i < 32; i++) {
+      secret += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return secret;
+  };
+
+  const setupTotp = () => {
+    const secret = generateTotpSecret();
+    setTotpSecret(secret);
+    setShowTotpSetup(true);
+  };
+
+  const verifyAndRegisterTotp = () => {
+    if (totpCode.length !== 6) {
+      alert('Please enter a 6-digit code');
+      return;
+    }
+
+    // In production, verify the TOTP code with backend
+    // For demo, we'll accept any 6-digit code
+    localStorage.setItem('totp_registered', 'true');
+    localStorage.setItem('totp_secret', totpSecret);
+    setTotpRegistered(true);
+    setShowTotpSetup(false);
+    setTotpCode('');
+    setMfaInfo({
+      enabled: true,
+      method: 'totp',
+      timestamp: new Date().toISOString()
+    });
+  };
+
+  const getTotpUri = () => {
+    const issuer = 'CognitoMFADemo';
+    const accountName = auth.user?.profile?.email || 'user@example.com';
+    return `otpauth://totp/${issuer}:${accountName}?secret=${totpSecret}&issuer=${issuer}`;
+  };
 
   useEffect(() => {
     if (auth.isLoading) {
@@ -258,6 +310,18 @@ function App() {
               </div>
             )}
 
+            {!totpRegistered && (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
+                <p className="text-xs text-green-800 mb-2">📱 Setup Virtual MFA (Authenticator App)</p>
+                <button
+                  onClick={setupTotp}
+                  className="text-xs bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600 transition-colors"
+                >
+                  Setup Authenticator
+                </button>
+              </div>
+            )}
+
             {passkeySupported && !passkeyRegistered && (
               <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 mb-4">
                 <p className="text-xs text-purple-800 mb-2">🔑 Enhance your security with Passkey</p>
@@ -293,6 +357,46 @@ function App() {
             🚪 Sign Out
           </button>
         </div>
+
+        {showTotpSetup && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-2xl p-6 max-w-md w-full">
+              <h3 className="text-xl font-bold text-gray-800 mb-4">📱 Setup Authenticator App</h3>
+              <p className="text-sm text-gray-600 mb-4">
+                Scan this QR code with your authenticator app (Google Authenticator, Microsoft Authenticator, Authy, etc.)
+              </p>
+              <div className="bg-white p-4 rounded-lg border-2 border-gray-200 mb-4 flex justify-center">
+                <QRCodeSVG value={getTotpUri()} size={200} />
+              </div>
+              <div className="bg-gray-50 rounded-lg p-3 mb-4">
+                <p className="text-xs text-gray-600 mb-1">Or enter this secret key manually:</p>
+                <p className="font-mono text-sm text-gray-800 break-all">{totpSecret}</p>
+              </div>
+              <input
+                type="text"
+                placeholder="Enter 6-digit code"
+                maxLength="6"
+                value={totpCode}
+                onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, ''))}
+                className="w-full border border-gray-300 rounded-lg px-4 py-2 mb-4 text-center text-lg font-mono"
+              />
+              <div className="flex gap-3">
+                <button
+                  onClick={verifyAndRegisterTotp}
+                  className="flex-1 bg-green-500 text-white py-2 rounded-lg hover:bg-green-600 transition-colors"
+                >
+                  Verify & Register
+                </button>
+                <button
+                  onClick={() => { setShowTotpSetup(false); setTotpCode(''); }}
+                  className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg hover:bg-gray-300 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {showPasskeySetup && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -345,11 +449,19 @@ function App() {
               <span>MFA-Protected Authentication</span>
             </p>
           </div>
-          {passkeySupported && (
+          {totpRegistered && (
+            <div className="mt-3 bg-green-50 border border-green-200 rounded-lg p-3">
+              <p className="text-xs text-green-800 flex items-center justify-center gap-2">
+                <span>📱</span>
+                <span>TOTP Authenticator Enabled</span>
+              </p>
+            </div>
+          )}
+          {passkeySupported && passkeyRegistered && (
             <div className="mt-3 bg-purple-50 border border-purple-200 rounded-lg p-3">
               <p className="text-xs text-purple-800 flex items-center justify-center gap-2">
                 <span>🔑</span>
-                <span>{passkeyRegistered ? 'Passkey Enabled' : 'Passkey Available'}</span>
+                <span>Passkey Enabled</span>
               </p>
             </div>
           )}

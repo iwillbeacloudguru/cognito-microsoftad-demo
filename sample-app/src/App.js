@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 function App() {
   const auth = useAuth();
   const [authStage, setAuthStage] = useState('idle');
+  const [mfaInfo, setMfaInfo] = useState(null);
   
   useEffect(() => {
     if (auth.isLoading) {
@@ -16,8 +17,58 @@ function App() {
       }
     } else if (auth.isAuthenticated) {
       setAuthStage('authenticated');
+      detectMfaStatus();
+    } else {
+      setAuthStage('idle');
     }
   }, [auth.isLoading, auth.isAuthenticated]);
+
+  const detectMfaStatus = () => {
+    if (!auth.user) return;
+
+    const profile = auth.user.profile;
+    const idToken = auth.user.id_token;
+    
+    // Decode JWT to check for MFA claims
+    let mfaEnabled = false;
+    let mfaMethod = null;
+    
+    try {
+      // Check various MFA indicators
+      if (profile?.['cognito:mfa_enabled']) {
+        mfaEnabled = true;
+      }
+      
+      // Check AMR (Authentication Methods References)
+      if (profile?.amr) {
+        const amrArray = Array.isArray(profile.amr) ? profile.amr : [profile.amr];
+        if (amrArray.includes('mfa') || amrArray.includes('otp') || amrArray.includes('sms')) {
+          mfaEnabled = true;
+          mfaMethod = amrArray.find(m => ['mfa', 'otp', 'sms', 'totp'].includes(m));
+        }
+      }
+
+      // Decode ID token for additional MFA claims
+      if (idToken) {
+        const payload = JSON.parse(atob(idToken.split('.')[1]));
+        if (payload.amr) {
+          const amrArray = Array.isArray(payload.amr) ? payload.amr : [payload.amr];
+          if (amrArray.includes('mfa') || amrArray.includes('otp') || amrArray.includes('sms')) {
+            mfaEnabled = true;
+            mfaMethod = amrArray.find(m => ['mfa', 'otp', 'sms', 'totp'].includes(m));
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error detecting MFA status:', error);
+    }
+
+    setMfaInfo({
+      enabled: mfaEnabled,
+      method: mfaMethod,
+      timestamp: new Date().toISOString()
+    });
+  };
   
   const signOutRedirect = () => {
     const clientId = "5tai0tc43qpu5fq4l8hukmh9q3";
@@ -62,7 +113,7 @@ function App() {
   }
 
   if (auth.isAuthenticated) {
-    const mfaVerified = auth.user?.profile?.['cognito:mfa_enabled'] || auth.user?.profile?.amr?.includes('mfa');
+    const mfaVerified = mfaInfo?.enabled;
     
     return (
       <div className="min-h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center p-4">
@@ -81,12 +132,20 @@ function App() {
               <div className="flex gap-2">
                 {mfaVerified && (
                   <span className="bg-blue-500 text-white px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1">
-                    🔒 MFA
+                    🔒 MFA {mfaInfo?.method && `(${mfaInfo.method.toUpperCase()})`}
                   </span>
                 )}
                 <span className="bg-green-500 text-white px-3 py-1 rounded-full text-xs font-medium">Active</span>
               </div>
             </div>
+
+            {mfaVerified && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+                <p className="text-xs text-blue-800">
+                  ✓ Multi-Factor Authentication verified at {new Date(mfaInfo.timestamp).toLocaleTimeString()}
+                </p>
+              </div>
+            )}
 
             <div className="space-y-3 mt-4">
               <div className="bg-white border border-gray-200 rounded-lg p-4">

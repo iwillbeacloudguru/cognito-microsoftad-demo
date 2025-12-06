@@ -2,6 +2,7 @@ import './App.css';
 import { useAuth } from "react-oidc-context";
 import { useState, useEffect } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
+import MfaSettings from './MfaSettings';
 
 function App() {
   const auth = useAuth();
@@ -16,6 +17,7 @@ function App() {
   const [totpRegistered, setTotpRegistered] = useState(false);
   const [showTotpVerify, setShowTotpVerify] = useState(false);
   const [totpVerifyCode, setTotpVerifyCode] = useState('');
+  const [showMfaSettings, setShowMfaSettings] = useState(false);
   
   useEffect(() => {
     checkPasskeySupport();
@@ -328,6 +330,10 @@ function App() {
   }
 
   if (auth.isAuthenticated) {
+    if (showMfaSettings) {
+      return <MfaSettings user={auth.user?.profile} onBack={() => setShowMfaSettings(false)} />;
+    }
+
     const mfaVerified = mfaInfo?.enabled;
     
     return (
@@ -402,12 +408,20 @@ function App() {
             </div>
           </div>
 
-          <button 
-            className="w-full bg-red-500 text-white py-3 rounded-lg font-medium hover:bg-red-600 hover:-translate-y-0.5 transition-all duration-200"
-            onClick={() => auth.removeUser()}
-          >
-            🚪 Sign Out
-          </button>
+          <div className="flex gap-3">
+            <button 
+              className="flex-1 bg-indigo-500 text-white py-3 rounded-lg font-medium hover:bg-indigo-600 hover:-translate-y-0.5 transition-all duration-200"
+              onClick={() => setShowMfaSettings(true)}
+            >
+              ⚙️ MFA Settings
+            </button>
+            <button 
+              className="flex-1 bg-red-500 text-white py-3 rounded-lg font-medium hover:bg-red-600 hover:-translate-y-0.5 transition-all duration-200"
+              onClick={() => auth.removeUser()}
+            >
+              🚪 Sign Out
+            </button>
+          </div>
         </div>
 
         {showTotpSetup && (

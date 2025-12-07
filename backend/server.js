@@ -18,6 +18,32 @@ const pool = new Pool({
   password: process.env.DB_PASSWORD || 'mfa_password',
 });
 
+// Health check
+app.get('/', (req, res) => {
+  res.json({ 
+    status: 'ok', 
+    message: 'MFA Backend API',
+    version: '1.0.0',
+    endpoints: {
+      users: 'POST /api/users',
+      register: 'POST /api/mfa/register',
+      devices: 'GET /api/mfa/:email',
+      update: 'PUT /api/mfa/:id',
+      updateUsed: 'PUT /api/mfa/:id/used',
+      delete: 'DELETE /api/mfa/:id'
+    }
+  });
+});
+
+app.get('/health', async (req, res) => {
+  try {
+    await pool.query('SELECT 1');
+    res.json({ status: 'healthy', database: 'connected' });
+  } catch (error) {
+    res.status(500).json({ status: 'unhealthy', database: 'disconnected', error: error.message });
+  }
+});
+
 // Create or get user
 app.post('/api/users', async (req, res) => {
   const { email, cognito_sub } = req.body;
@@ -107,5 +133,7 @@ app.delete('/api/mfa/:id', async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Backend server running on port ${PORT}`);
+  console.log(`🚀 Backend server running on port ${PORT}`);
+  console.log(`📍 API: http://localhost:${PORT}/api`);
+  console.log(`💚 Health: http://localhost:${PORT}/health`);
 });

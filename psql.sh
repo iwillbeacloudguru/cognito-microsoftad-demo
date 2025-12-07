@@ -1,0 +1,1 @@
+psql -h localhost -U mfa_user -d mfa_demo

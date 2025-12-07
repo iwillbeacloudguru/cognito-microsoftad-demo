@@ -4,15 +4,11 @@ import { registerMfaDevice, getMfaDevices, deleteMfaDevice } from './api';
 
 function MfaSettings({ user, onBack }) {
   const [totpRegistered, setTotpRegistered] = useState(false);
-  const [passkeyRegistered, setPasskeyRegistered] = useState(false);
-  const [passkeySupported, setPasskeySupported] = useState(false);
   const [showTotpSetup, setShowTotpSetup] = useState(false);
-  const [showPasskeySetup, setShowPasskeySetup] = useState(false);
   const [totpSecret, setTotpSecret] = useState('');
   const [totpCode, setTotpCode] = useState('');
 
   useEffect(() => {
-    checkMfaStatus();
     loadMfaDevices();
   }, []);
 
@@ -20,18 +16,13 @@ function MfaSettings({ user, onBack }) {
     try {
       const devices = await getMfaDevices(user?.email);
       const hasTOTP = devices.some(d => d.device_type === 'totp' && d.is_active);
-      const hasPasskey = devices.some(d => d.device_type === 'passkey' && d.is_active);
       setTotpRegistered(hasTOTP);
-      setPasskeyRegistered(hasPasskey);
     } catch (error) {
       console.error('Failed to load MFA devices:', error);
     }
   };
 
-  const checkMfaStatus = () => {
-    setPasskeyRegistered(localStorage.getItem('passkey_registered') === 'true');
-    setPasskeySupported(window.PublicKeyCredential !== undefined && navigator.credentials !== undefined);
-  };
+
 
   const generateTotpSecret = () => {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
@@ -132,74 +123,7 @@ function MfaSettings({ user, onBack }) {
     }
   };
 
-  const registerPasskey = async () => {
-    if (!passkeySupported) {
-      alert('Passkeys are not supported in this browser');
-      return;
-    }
 
-    try {
-      const challenge = new Uint8Array(32);
-      window.crypto.getRandomValues(challenge);
-
-      const publicKeyCredentialCreationOptions = {
-        challenge,
-        rp: {
-          name: "Cognito MFA Demo",
-          id: window.location.hostname,
-        },
-        user: {
-          id: new Uint8Array(16),
-          name: user?.email || "user@example.com",
-          displayName: user?.email || "User",
-        },
-        pubKeyCredParams: [{alg: -7, type: "public-key"}],
-        authenticatorSelection: {
-          authenticatorAttachment: "platform",
-          userVerification: "required",
-        },
-        timeout: 60000,
-        attestation: "direct"
-      };
-
-      const credential = await navigator.credentials.create({
-        publicKey: publicKeyCredentialCreationOptions
-      });
-
-      if (credential) {
-        localStorage.setItem('passkey_registered', 'true');
-        localStorage.setItem('passkey_credential_id', credential.id);
-        setPasskeyRegistered(true);
-        setShowPasskeySetup(false);
-
-        try {
-          await registerMfaDevice(user?.email, 'passkey', 'Biometric Device', null, credential.id);
-        } catch (error) {
-          console.error('Failed to save passkey:', error);
-        }
-      }
-    } catch (error) {
-      console.error('Passkey registration failed:', error);
-      alert('Passkey registration failed: ' + error.message);
-    }
-  };
-
-  const removePasskey = async () => {
-    if (window.confirm('Are you sure you want to remove Passkey?')) {
-      try {
-        const devices = await getMfaDevices(user?.email);
-        const passkeyDevice = devices.find(d => d.device_type === 'passkey' && d.is_active);
-        if (passkeyDevice) {
-          await deleteMfaDevice(passkeyDevice.id);
-        }
-        localStorage.removeItem('passkey_registered');
-        localStorage.removeItem('passkey_credential_id');
-        setPasskeyRegistered(false);
-      } catch (error) {
-        console.error('Failed to remove passkey:', error);
-      }
-    }
-  };
 
   const getTotpUri = () => {
     const issuer = 'CognitoMFADemo';
@@ -251,43 +175,7 @@ function MfaSettings({ user, onBack }) {
             )}
           </div>
 
-          {/* Passkey */}
-          <div className="bg-gray-50 rounded-xl p-6 border-2 border-gray-200">
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-2xl">🔑</span>
-                  <h3 className="text-lg font-semibold text-gray-800">Passkey / Biometric</h3>
-                  {passkeyRegistered && (
-                    <span className="bg-green-500 text-white px-2 py-1 rounded-full text-xs">Active</span>
-                  )}
-                  {!passkeySupported && (
-                    <span className="bg-gray-400 text-white px-2 py-1 rounded-full text-xs">Not Supported</span>
-                  )}
-                </div>
-                <p className="text-sm text-gray-600 mb-3">
-                  Use Face ID, Touch ID, Windows Hello, or hardware security keys
-                </p>
-              </div>
-            </div>
-            {passkeySupported && (
-              passkeyRegistered ? (
-                <button
-                  onClick={removePasskey}
-                  className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors text-sm"
-                >
-                  Remove Passkey
-                </button>
-              ) : (
-                <button
-                  onClick={() => setShowPasskeySetup(true)}
-                  className="bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-600 transition-colors text-sm"
-                >
-                  Register Passkey
-                </button>
-              )
-            )}
-          </div>
+
         </div>
       </div>
 
@@ -332,31 +220,7 @@ function MfaSettings({ user, onBack }) {
         </div>
       )}
 
-      {/* Passkey Setup Modal */}
-      {showPasskeySetup && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl p-6 max-w-md w-full">
-            <h3 className="text-xl font-bold text-gray-800 mb-4">🔑 Register Passkey</h3>
-            <p className="text-sm text-gray-600 mb-4">
-              Use your device's biometric authentication (fingerprint, face ID) or security key
-            </p>
-            <div className="flex gap-3">
-              <button
-                onClick={registerPasskey}
-                className="flex-1 bg-purple-500 text-white py-2 rounded-lg hover:bg-purple-600 transition-colors"
-              >
-                Register Now
-              </button>
-              <button
-                onClick={() => setShowPasskeySetup(false)}
-                className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg hover:bg-gray-300 transition-colors"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+
     </div>
   );
 }

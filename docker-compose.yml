@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  postgres:
+    build:
+      context: .
+      dockerfile: Dockerfile.postgres
+    container_name: mfa-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: mfa_demo
+      POSTGRES_USER: mfa_user
+      POSTGRES_PASSWORD: mfa_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - mfa-network
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: mfa-app
+    ports:
+      - "3000:3000"
+    depends_on:
+      - postgres
+    networks:
+      - mfa-network
+
+volumes:
+  postgres_data:
+
+networks:
+  mfa-network:
+    driver: bridge

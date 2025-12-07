@@ -21,6 +21,7 @@ function App() {
   const [totpVerifyCode, setTotpVerifyCode] = useState('');
   const [showMfaSettings, setShowMfaSettings] = useState(false);
   const [showMfaCrud, setShowMfaCrud] = useState(false);
+  const [loginEmail, setLoginEmail] = useState('');
   
   useEffect(() => {
     checkPasskeySupport();
@@ -608,8 +609,6 @@ function App() {
   const handleSignIn = async () => {
     setShowTotpVerify(true);
   };
-
-  const [loginEmail, setLoginEmail] = useState('');
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center p-4">

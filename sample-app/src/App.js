@@ -3,7 +3,6 @@ import { useAuth } from "react-oidc-context";
 import { useState, useEffect } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import MfaSettings from './MfaSettings';
-import MfaCrud from './MfaCrud';
 import { createUser, registerMfaDevice, getMfaDevices, updateMfaUsed } from './api';
 
 function App() {
@@ -18,7 +17,6 @@ function App() {
   const [showTotpVerify, setShowTotpVerify] = useState(false);
   const [totpVerifyCode, setTotpVerifyCode] = useState('');
   const [showMfaSettings, setShowMfaSettings] = useState(false);
-  const [showMfaCrud, setShowMfaCrud] = useState(false);
   const [loginEmail, setLoginEmail] = useState('');
   
 
@@ -251,14 +249,14 @@ function App() {
 
   if (auth.isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center">
-        <div className="text-center text-white">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
           <div className="spinner mx-auto mb-4"></div>
-          <p className="text-lg font-medium">
+          <p className="text-lg font-medium text-gray-900">
             {authStage === 'mfa' ? 'Verifying MFA...' : 'Authenticating...'}
           </p>
           {authStage === 'mfa' && (
-            <p className="text-sm mt-2 opacity-90">Please complete MFA verification</p>
+            <p className="text-sm mt-2 text-gray-500">Please complete MFA verification</p>
           )}
         </div>
       </div>
@@ -267,28 +265,39 @@ function App() {
 
   if (auth.error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full">
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
-            <h5 className="text-lg font-semibold text-yellow-800 mb-2">⚠️ Authentication Error</h5>
-            <p className="text-yellow-700 text-sm">{auth.error.message}</p>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-md w-full">
+          <div className="bg-white shadow sm:rounded-lg">
+            <div className="px-4 py-5 sm:p-6">
+              <div className="rounded-md bg-yellow-50 p-4 mb-4">
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div className="ml-3">
+                    <h3 className="text-sm font-medium text-yellow-800">Authentication Error</h3>
+                    <div className="mt-2 text-sm text-yellow-700">
+                      <p>{auth.error.message}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <button 
+                onClick={() => window.location.reload()}
+                className="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              >
+                Try Again
+              </button>
+            </div>
           </div>
-          <button 
-            className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white py-3 rounded-lg font-medium hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200"
-            onClick={() => window.location.reload()}
-          >
-            Try Again
-          </button>
         </div>
       </div>
     );
   }
 
   if (auth.isAuthenticated) {
-    if (showMfaCrud) {
-      return <MfaCrud user={auth.user?.profile} onBack={() => setShowMfaCrud(false)} />;
-    }
-    
     if (showMfaSettings) {
       return <MfaSettings user={auth.user?.profile} onBack={() => setShowMfaSettings(false)} />;
     }
@@ -296,116 +305,117 @@ function App() {
     const mfaVerified = mfaInfo?.enabled;
     
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-2xl w-full">
-          <div className="text-center mb-6">
-            <h1 className="text-3xl font-bold text-gray-800 mb-2">✓ Authenticated</h1>
-            <p className="text-gray-600">Welcome back to your secure session</p>
-          </div>
-
-          <div className="bg-gray-50 rounded-xl p-6 mb-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <span className="text-2xl">👤</span>
-                <span className="text-lg font-medium text-gray-800">{auth.user?.profile.email}</span>
+      <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-4xl mx-auto">
+          <div className="bg-white shadow sm:rounded-lg">
+            <div className="px-4 py-5 sm:p-6">
+              <div className="text-center mb-6">
+                <h1 className="text-3xl font-semibold text-gray-900 mb-2">Authenticated</h1>
+                <p className="text-gray-500">Welcome back to your secure session</p>
               </div>
-              <div className="flex gap-2">
+
+              <div className="bg-gray-50 rounded-lg p-6 mb-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg font-medium text-gray-900">{auth.user?.profile.email}</span>
+                  </div>
+                  <div className="flex gap-2">
+                    {mfaVerified && (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        MFA {mfaInfo?.method && `(${mfaInfo.method.toUpperCase()})`}
+                      </span>
+                    )}
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Active</span>
+                  </div>
+                </div>
+
                 {mfaVerified && (
-                  <span className="bg-blue-500 text-white px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1">
-                    🔒 MFA {mfaInfo?.method && `(${mfaInfo.method.toUpperCase()})`}
-                  </span>
+                  <div className="rounded-md bg-blue-50 p-3 mb-4">
+                    <p className="text-xs text-blue-800">
+                      Multi-Factor Authentication verified at {new Date(mfaInfo.timestamp).toLocaleTimeString()}
+                    </p>
+                  </div>
                 )}
-                <span className="bg-green-500 text-white px-3 py-1 rounded-full text-xs font-medium">Active</span>
+
+                <div className="space-y-3 mt-4">
+                  <div className="bg-white border border-gray-200 rounded-md p-4">
+                    <div className="text-xs font-semibold text-gray-500 uppercase mb-2">ID Token</div>
+                    <div className="font-mono text-xs text-gray-700 break-all leading-relaxed">{auth.user?.id_token}</div>
+                  </div>
+                  <div className="bg-white border border-gray-200 rounded-md p-4">
+                    <div className="text-xs font-semibold text-gray-500 uppercase mb-2">Access Token</div>
+                    <div className="font-mono text-xs text-gray-700 break-all leading-relaxed">{auth.user?.access_token}</div>
+                  </div>
+                  <div className="bg-white border border-gray-200 rounded-md p-4">
+                    <div className="text-xs font-semibold text-gray-500 uppercase mb-2">Refresh Token</div>
+                    <div className="font-mono text-xs text-gray-700 break-all leading-relaxed">{auth.user?.refresh_token}</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-6 space-y-3">
+                <button 
+                  onClick={() => setShowMfaSettings(true)}
+                  className="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                >
+                  MFA Settings & Devices
+                </button>
+                <button 
+                  onClick={() => {
+                    localStorage.clear();
+                    sessionStorage.clear();
+                    signOutRedirect();
+                  }}
+                  className="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                >
+                  Sign Out
+                </button>
               </div>
             </div>
-
-            {mfaVerified && (
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
-                <p className="text-xs text-blue-800">
-                  ✓ Multi-Factor Authentication verified at {new Date(mfaInfo.timestamp).toLocaleTimeString()}
-                </p>
-              </div>
-            )}
-
-            <div className="space-y-3 mt-4">
-              <div className="bg-white border border-gray-200 rounded-lg p-4">
-                <div className="text-xs font-semibold text-gray-500 uppercase mb-2">ID Token</div>
-                <div className="font-mono text-xs text-gray-700 break-all leading-relaxed">{auth.user?.id_token}</div>
-              </div>
-              <div className="bg-white border border-gray-200 rounded-lg p-4">
-                <div className="text-xs font-semibold text-gray-500 uppercase mb-2">Access Token</div>
-                <div className="font-mono text-xs text-gray-700 break-all leading-relaxed">{auth.user?.access_token}</div>
-              </div>
-              <div className="bg-white border border-gray-200 rounded-lg p-4">
-                <div className="text-xs font-semibold text-gray-500 uppercase mb-2">Refresh Token</div>
-                <div className="font-mono text-xs text-gray-700 break-all leading-relaxed">{auth.user?.refresh_token}</div>
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-3">
-            <div className="flex gap-3">
-              <button 
-                className="flex-1 bg-indigo-500 text-white py-3 rounded-lg font-medium hover:bg-indigo-600 hover:-translate-y-0.5 transition-all duration-200"
-                onClick={() => setShowMfaSettings(true)}
-              >
-                ⚙️ MFA Settings
-              </button>
-              <button 
-                className="flex-1 bg-purple-500 text-white py-3 rounded-lg font-medium hover:bg-purple-600 hover:-translate-y-0.5 transition-all duration-200"
-                onClick={() => setShowMfaCrud(true)}
-              >
-                📋 Manage Devices
-              </button>
-            </div>
-            <button 
-              className="w-full bg-red-500 text-white py-3 rounded-lg font-medium hover:bg-red-600 hover:-translate-y-0.5 transition-all duration-200"
-              onClick={() => {
-                localStorage.clear();
-                sessionStorage.clear();
-                signOutRedirect();
-              }}
-            >
-              🚪 Sign Out
-            </button>
           </div>
         </div>
 
         {showTotpSetup && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-2xl p-6 max-w-md w-full">
-              <h3 className="text-xl font-bold text-gray-800 mb-4">📱 Setup Authenticator App</h3>
-              <p className="text-sm text-gray-600 mb-4">
-                Scan this QR code with your authenticator app (Google Authenticator, Microsoft Authenticator, Authy, etc.)
-              </p>
-              <div className="bg-white p-4 rounded-lg border-2 border-gray-200 mb-4 flex justify-center">
-                <QRCodeSVG value={getTotpUri()} size={200} />
-              </div>
-              <div className="bg-gray-50 rounded-lg p-3 mb-4">
-                <p className="text-xs text-gray-600 mb-1">Or enter this secret key manually:</p>
-                <p className="font-mono text-sm text-gray-800 break-all">{totpSecret}</p>
-              </div>
-              <input
-                type="text"
-                placeholder="Enter 6-digit code"
-                maxLength="6"
-                value={totpCode}
-                onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, ''))}
-                className="w-full border border-gray-300 rounded-lg px-4 py-2 mb-4 text-center text-lg font-mono"
-              />
-              <div className="flex gap-3">
-                <button
-                  onClick={verifyAndRegisterTotp}
-                  className="flex-1 bg-green-500 text-white py-2 rounded-lg hover:bg-green-600 transition-colors"
-                >
-                  Verify & Register
-                </button>
-                <button
-                  onClick={() => { setShowTotpSetup(false); setTotpCode(''); }}
-                  className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg hover:bg-gray-300 transition-colors"
-                >
-                  Cancel
-                </button>
+          <div className="fixed z-10 inset-0 overflow-y-auto">
+            <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+              <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
+              <span className="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
+              <div className="inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6">
+                <div>
+                  <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">Setup Authenticator App</h3>
+                  <p className="text-sm text-gray-500 mb-4">
+                    Scan this QR code with your authenticator app
+                  </p>
+                  <div className="bg-white p-4 border border-gray-200 rounded-md mb-4 flex justify-center">
+                    <QRCodeSVG value={getTotpUri()} size={200} />
+                  </div>
+                  <div className="bg-gray-50 rounded-md p-3 mb-4">
+                    <p className="text-xs text-gray-500 mb-1">Or enter this secret key manually:</p>
+                    <p className="font-mono text-sm text-gray-900 break-all">{totpSecret}</p>
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Enter 6-digit code"
+                    maxLength="6"
+                    value={totpCode}
+                    onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, ''))}
+                    className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm text-center text-lg font-mono"
+                  />
+                </div>
+                <div className="mt-5 sm:mt-6 sm:grid sm:grid-cols-2 sm:gap-3 sm:grid-flow-row-dense">
+                  <button
+                    onClick={verifyAndRegisterTotp}
+                    className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:col-start-2 sm:text-sm"
+                  >
+                    Verify & Register
+                  </button>
+                  <button
+                    onClick={() => { setShowTotpSetup(false); setTotpCode(''); }}
+                    className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:col-start-1 sm:text-sm"
+                  >
+                    Cancel
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -459,64 +469,73 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">🔐 Secure Login</h1>
-          <p className="text-gray-600">Sign in with Microsoft AD (ADFS SSO)</p>
-          <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-3">
-            <p className="text-xs text-blue-800 flex items-center justify-center gap-2">
-              <span>🔒</span>
-              <span>MFA Required After SSO</span>
-            </p>
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full">
+        <div className="bg-white shadow sm:rounded-lg">
+          <div className="px-4 py-5 sm:p-6">
+            <div className="text-center mb-6">
+              <h1 className="text-3xl font-semibold text-gray-900 mb-2">Secure Login</h1>
+              <p className="text-gray-500">Sign in with Microsoft AD (ADFS SSO)</p>
+              <div className="mt-4 rounded-md bg-blue-50 p-3">
+                <p className="text-xs text-blue-800 text-center">
+                  MFA Required After SSO
+                </p>
+              </div>
+            </div>
+            <button 
+              onClick={handleSignIn}
+              className="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            >
+              Sign In with ADFS SSO
+            </button>
           </div>
         </div>
-        <button 
-          className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white py-3 rounded-lg font-medium hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200"
-          onClick={handleSignIn}
-        >
-          🏢 Sign In with ADFS SSO
-        </button>
       </div>
 
       {showTotpVerify && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl p-6 max-w-md w-full">
-            <h3 className="text-xl font-bold text-gray-800 mb-4">📱 MFA Required</h3>
-            <p className="text-sm text-gray-600 mb-2">
-              Email: <strong>{auth.user?.profile?.email}</strong>
-            </p>
-            <p className="text-sm text-gray-600 mb-4">
-              Enter the 6-digit code from your authenticator app
-            </p>
-            <input
-              type="text"
-              placeholder="000000"
-              maxLength="6"
-              value={totpVerifyCode}
-              onChange={(e) => setTotpVerifyCode(e.target.value.replace(/\D/g, ''))}
-              className="w-full border-2 border-gray-300 rounded-lg px-4 py-3 mb-4 text-center text-2xl font-mono tracking-widest focus:border-indigo-500 focus:outline-none"
-              autoFocus
-            />
-            <div className="flex gap-3">
-              <button
-                onClick={verifyTotpLogin}
-                disabled={totpVerifyCode.length !== 6}
-                className="flex-1 bg-indigo-500 text-white py-2 rounded-lg hover:bg-indigo-600 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
-              >
-                Verify & Sign In
-              </button>
-              <button
-                onClick={() => {
-                  setShowTotpVerify(false);
-                  setTotpVerifyCode('');
-                  auth.removeUser();
-                  window.location.href = '/';
-                }}
-                className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg hover:bg-gray-300 transition-colors"
-              >
-                Cancel & Sign Out
-              </button>
+        <div className="fixed z-10 inset-0 overflow-y-auto">
+          <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
+            <span className="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
+            <div className="inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6">
+              <div>
+                <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">MFA Required</h3>
+                <p className="text-sm text-gray-500 mb-2">
+                  Email: <strong>{auth.user?.profile?.email}</strong>
+                </p>
+                <p className="text-sm text-gray-500 mb-4">
+                  Enter the 6-digit code from your authenticator app
+                </p>
+                <input
+                  type="text"
+                  placeholder="000000"
+                  maxLength="6"
+                  value={totpVerifyCode}
+                  onChange={(e) => setTotpVerifyCode(e.target.value.replace(/\D/g, ''))}
+                  className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm text-center text-2xl font-mono tracking-widest"
+                  autoFocus
+                />
+              </div>
+              <div className="mt-5 sm:mt-6 sm:grid sm:grid-cols-2 sm:gap-3 sm:grid-flow-row-dense">
+                <button
+                  onClick={verifyTotpLogin}
+                  disabled={totpVerifyCode.length !== 6}
+                  className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-gray-300 disabled:cursor-not-allowed sm:col-start-2 sm:text-sm"
+                >
+                  Verify & Sign In
+                </button>
+                <button
+                  onClick={() => {
+                    setShowTotpVerify(false);
+                    setTotpVerifyCode('');
+                    auth.removeUser();
+                    window.location.href = '/';
+                  }}
+                  className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:col-start-1 sm:text-sm"
+                >
+                  Cancel & Sign Out
+                </button>
+              </div>
             </div>
           </div>
         </div>

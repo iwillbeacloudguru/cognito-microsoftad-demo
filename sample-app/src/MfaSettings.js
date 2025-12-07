@@ -29,7 +29,6 @@ function MfaSettings({ user, onBack }) {
   };
 
   const checkMfaStatus = () => {
-    setTotpRegistered(localStorage.getItem('totp_registered') === 'true');
     setPasskeyRegistered(localStorage.getItem('passkey_registered') === 'true');
     setPasskeySupported(window.PublicKeyCredential !== undefined && navigator.credentials !== undefined);
   };
@@ -107,16 +106,14 @@ function MfaSettings({ user, onBack }) {
       return;
     }
 
-    localStorage.setItem('totp_registered', 'true');
-    localStorage.setItem('totp_secret', totpSecret);
-    setTotpRegistered(true);
-    setShowTotpSetup(false);
-    setTotpCode('');
-
     try {
       await registerMfaDevice(user?.email, 'totp', 'Authenticator App', totpSecret, null);
+      setTotpRegistered(true);
+      setShowTotpSetup(false);
+      setTotpCode('');
     } catch (error) {
       console.error('Failed to save TOTP:', error);
+      alert('Failed to register TOTP. Please try again.');
     }
   };
 
@@ -128,8 +125,6 @@ function MfaSettings({ user, onBack }) {
         if (totpDevice) {
           await deleteMfaDevice(totpDevice.id);
         }
-        localStorage.removeItem('totp_registered');
-        localStorage.removeItem('totp_secret');
         setTotpRegistered(false);
       } catch (error) {
         console.error('Failed to remove TOTP:', error);

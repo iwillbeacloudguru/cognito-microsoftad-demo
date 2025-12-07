@@ -1,4 +1,4 @@
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000/api';
+const API_URL = process.env.REACT_APP_API_URL || 'https://api.nttdata-cs.com/api';
 
 export const createUser = async (email, cognitoSub) => {
   const response = await fetch(`${API_URL}/users`, {

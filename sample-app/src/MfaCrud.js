@@ -40,7 +40,8 @@ function MfaCrud({ user, onBack }) {
 
   const saveUpdate = async () => {
     try {
-      await fetch(`http://localhost:4000/api/mfa/${editDevice.id}`, {
+      const API_URL = process.env.REACT_APP_API_URL || 'https://api.nttdata-cs.com/api';
+      await fetch(`${API_URL}/mfa/${editDevice.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ device_name: deviceName }),

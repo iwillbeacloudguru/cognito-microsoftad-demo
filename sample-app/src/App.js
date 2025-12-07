@@ -25,7 +25,6 @@ function App() {
   useEffect(() => {
     checkPasskeySupport();
     checkPasskeyRegistration();
-    checkTotpRegistration();
   }, []);
 
   useEffect(() => {
@@ -55,9 +54,16 @@ function App() {
     }
   };
 
-  const checkTotpRegistration = () => {
-    const registered = localStorage.getItem('totp_registered') === 'true';
-    setTotpRegistered(registered);
+  const checkTotpRegistration = async () => {
+    if (auth.user?.profile?.email) {
+      try {
+        const devices = await getMfaDevices(auth.user.profile.email);
+        const hasTOTP = devices.some(d => d.device_type === 'totp' && d.is_active);
+        setTotpRegistered(hasTOTP);
+      } catch (error) {
+        console.error('Failed to check TOTP:', error);
+      }
+    }
   };
 
   const generateTotpSecret = () => {
@@ -133,17 +139,6 @@ function App() {
       return;
     }
 
-    localStorage.setItem('totp_registered', 'true');
-    localStorage.setItem('totp_secret', totpSecret);
-    setTotpRegistered(true);
-    setShowTotpSetup(false);
-    setTotpCode('');
-    setMfaInfo({
-      enabled: true,
-      method: 'totp',
-      timestamp: new Date().toISOString()
-    });
-
     try {
       await registerMfaDevice(
         auth.user?.profile?.email,
@@ -152,8 +147,17 @@ function App() {
         totpSecret,
         null
       );
+      setTotpRegistered(true);
+      setShowTotpSetup(false);
+      setTotpCode('');
+      setMfaInfo({
+        enabled: true,
+        method: 'totp',
+        timestamp: new Date().toISOString()
+      });
     } catch (error) {
       console.error('Failed to save TOTP to backend:', error);
+      alert('Failed to register TOTP. Please try again.');
     }
   };
 
@@ -564,38 +568,45 @@ function App() {
       return;
     }
 
-    const storedSecret = localStorage.getItem('totp_secret');
-    if (!storedSecret) {
-      alert('TOTP not configured');
-      return;
-    }
-
-    const validCode = await generateTOTP(storedSecret);
-    if (totpVerifyCode !== validCode) {
-      alert('Invalid code. Please check your authenticator app.');
-      return;
-    }
-
-    setShowTotpVerify(false);
-    setTotpVerifyCode('');
-    
     try {
       const devices = await getMfaDevices(auth.user?.profile?.email);
       const totpDevice = devices.find(d => d.device_type === 'totp' && d.is_active);
-      if (totpDevice) {
-        await updateMfaUsed(totpDevice.id);
+      
+      if (!totpDevice || !totpDevice.totp_secret) {
+        alert('TOTP not configured');
+        return;
       }
+
+      const validCode = await generateTOTP(totpDevice.totp_secret);
+      if (totpVerifyCode !== validCode) {
+        alert('Invalid code. Please check your authenticator app.');
+        return;
+      }
+
+      await updateMfaUsed(totpDevice.id);
+      setShowTotpVerify(false);
+      setTotpVerifyCode('');
+      auth.signinRedirect();
     } catch (error) {
-      console.error('Failed to update MFA usage:', error);
+      console.error('Failed to verify TOTP:', error);
+      alert('Failed to verify TOTP. Please try again.');
     }
-    
-    auth.signinRedirect();
   };
 
   const handleSignIn = async () => {
-    if (totpRegistered) {
-      setShowTotpVerify(true);
-    } else if (passkeyRegistered) {
+    try {
+      const devices = await getMfaDevices(auth.user?.profile?.email);
+      const hasTOTP = devices.some(d => d.device_type === 'totp' && d.is_active);
+      
+      if (hasTOTP) {
+        setShowTotpVerify(true);
+        return;
+      }
+    } catch (error) {
+      console.error('Failed to check MFA:', error);
+    }
+
+    if (passkeyRegistered) {
       const passkeyAuth = await authenticateWithPasskey();
       if (passkeyAuth) {
         auth.signinRedirect();

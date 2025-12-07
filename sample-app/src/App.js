@@ -22,7 +22,10 @@ function App() {
 
 
   useEffect(() => {
-    sessionStorage.removeItem('mfa_verified');
+    const urlParams = new URLSearchParams(window.location.search);
+    if (!urlParams.has('code') && !urlParams.has('state')) {
+      sessionStorage.removeItem('mfa_verified');
+    }
   }, []);
 
   useEffect(() => {

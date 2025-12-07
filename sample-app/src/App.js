@@ -32,8 +32,22 @@ function App() {
     if (auth.isAuthenticated && auth.user?.profile?.email) {
       syncUserToBackend();
       loadMfaDevicesFromBackend();
+      checkMfaRequired();
     }
   }, [auth.isAuthenticated]);
+
+  const checkMfaRequired = async () => {
+    try {
+      const devices = await getMfaDevices(auth.user.profile.email);
+      const hasTOTP = devices.some(d => d.device_type === 'totp' && d.is_active);
+      
+      if (hasTOTP && !sessionStorage.getItem('mfa_verified')) {
+        setShowTotpVerify(true);
+      }
+    } catch (error) {
+      console.error('Failed to check MFA:', error);
+    }
+  };
 
   const syncUserToBackend = async () => {
     try {
@@ -492,6 +506,7 @@ function App() {
                 localStorage.clear();
                 sessionStorage.clear();
                 auth.removeUser();
+                window.location.href = '/';
               }}
             >
               🚪 Sign Out
@@ -574,10 +589,9 @@ function App() {
     }
 
     try {
-      // Get email from input or use a temporary storage
-      const email = sessionStorage.getItem('login_email');
+      const email = auth.user?.profile?.email;
       if (!email) {
-        alert('Please enter your email first');
+        alert('User not authenticated');
         return;
       }
 
@@ -596,10 +610,9 @@ function App() {
       }
 
       await updateMfaUsed(totpDevice.id);
+      sessionStorage.setItem('mfa_verified', 'true');
       setShowTotpVerify(false);
       setTotpVerifyCode('');
-      sessionStorage.removeItem('login_email');
-      auth.signinRedirect();
     } catch (error) {
       console.error('Failed to verify TOTP:', error);
       alert('Failed to verify TOTP. Please try again.');
@@ -607,7 +620,7 @@ function App() {
   };
 
   const handleSignIn = async () => {
-    setShowTotpVerify(true);
+    auth.signinRedirect();
   };
 
   return (
@@ -615,34 +628,19 @@ function App() {
       <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-800 mb-2">🔐 Secure Login</h1>
-          <p className="text-gray-600">Sign in with your Microsoft AD credentials</p>
+          <p className="text-gray-600">Sign in with Microsoft AD (ADFS SSO)</p>
           <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-3">
             <p className="text-xs text-blue-800 flex items-center justify-center gap-2">
               <span>🔒</span>
-              <span>MFA Required for All Sign-ins</span>
+              <span>MFA Required After SSO</span>
             </p>
           </div>
         </div>
-        <input
-          type="email"
-          placeholder="Enter your email"
-          value={loginEmail}
-          onChange={(e) => setLoginEmail(e.target.value)}
-          className="w-full border border-gray-300 rounded-lg px-4 py-3 mb-4 focus:border-indigo-500 focus:outline-none"
-        />
         <button 
-          className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white py-3 rounded-lg font-medium hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-          onClick={() => {
-            if (loginEmail) {
-              sessionStorage.setItem('login_email', loginEmail);
-              handleSignIn();
-            } else {
-              alert('Please enter your email');
-            }
-          }}
-          disabled={!loginEmail}
+          className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white py-3 rounded-lg font-medium hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200"
+          onClick={handleSignIn}
         >
-          📱 Sign In with MFA
+          🏢 Sign In with ADFS SSO
         </button>
       </div>
 
@@ -651,7 +649,7 @@ function App() {
           <div className="bg-white rounded-2xl p-6 max-w-md w-full">
             <h3 className="text-xl font-bold text-gray-800 mb-4">📱 MFA Required</h3>
             <p className="text-sm text-gray-600 mb-2">
-              Email: <strong>{sessionStorage.getItem('login_email')}</strong>
+              Email: <strong>{auth.user?.profile?.email}</strong>
             </p>
             <p className="text-sm text-gray-600 mb-4">
               Enter the 6-digit code from your authenticator app
@@ -674,10 +672,15 @@ function App() {
                 Verify & Sign In
               </button>
               <button
-                onClick={() => { setShowTotpVerify(false); setTotpVerifyCode(''); }}
+                onClick={() => {
+                  setShowTotpVerify(false);
+                  setTotpVerifyCode('');
+                  auth.removeUser();
+                  window.location.href = '/';
+                }}
                 className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg hover:bg-gray-300 transition-colors"
               >
-                Cancel
+                Cancel & Sign Out
               </button>
             </div>
           </div>

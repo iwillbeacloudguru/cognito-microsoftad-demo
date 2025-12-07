@@ -573,11 +573,18 @@ function App() {
     }
 
     try {
-      const devices = await getMfaDevices(auth.user?.profile?.email);
+      // Get email from input or use a temporary storage
+      const email = sessionStorage.getItem('login_email');
+      if (!email) {
+        alert('Please enter your email first');
+        return;
+      }
+
+      const devices = await getMfaDevices(email);
       const totpDevice = devices.find(d => d.device_type === 'totp' && d.is_active);
       
       if (!totpDevice || !totpDevice.totp_secret) {
-        alert('TOTP not configured');
+        alert('TOTP not configured for this user');
         return;
       }
 
@@ -590,6 +597,7 @@ function App() {
       await updateMfaUsed(totpDevice.id);
       setShowTotpVerify(false);
       setTotpVerifyCode('');
+      sessionStorage.removeItem('login_email');
       auth.signinRedirect();
     } catch (error) {
       console.error('Failed to verify TOTP:', error);
@@ -598,27 +606,10 @@ function App() {
   };
 
   const handleSignIn = async () => {
-    try {
-      const devices = await getMfaDevices(auth.user?.profile?.email);
-      const hasTOTP = devices.some(d => d.device_type === 'totp' && d.is_active);
-      
-      if (hasTOTP) {
-        setShowTotpVerify(true);
-        return;
-      }
-    } catch (error) {
-      console.error('Failed to check MFA:', error);
-    }
-
-    if (passkeyRegistered) {
-      const passkeyAuth = await authenticateWithPasskey();
-      if (passkeyAuth) {
-        auth.signinRedirect();
-      }
-    } else {
-      auth.signinRedirect();
-    }
+    setShowTotpVerify(true);
   };
+
+  const [loginEmail, setLoginEmail] = useState('');
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center p-4">
@@ -629,40 +620,42 @@ function App() {
           <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-3">
             <p className="text-xs text-blue-800 flex items-center justify-center gap-2">
               <span>🔒</span>
-              <span>MFA-Protected Authentication</span>
+              <span>MFA Required for All Sign-ins</span>
             </p>
           </div>
-          {totpRegistered && (
-            <div className="mt-3 bg-green-50 border border-green-200 rounded-lg p-3">
-              <p className="text-xs text-green-800 flex items-center justify-center gap-2">
-                <span>📱</span>
-                <span>TOTP Authenticator Enabled</span>
-              </p>
-            </div>
-          )}
-          {passkeySupported && passkeyRegistered && (
-            <div className="mt-3 bg-purple-50 border border-purple-200 rounded-lg p-3">
-              <p className="text-xs text-purple-800 flex items-center justify-center gap-2">
-                <span>🔑</span>
-                <span>Passkey Enabled</span>
-              </p>
-            </div>
-          )}
         </div>
+        <input
+          type="email"
+          placeholder="Enter your email"
+          value={loginEmail}
+          onChange={(e) => setLoginEmail(e.target.value)}
+          className="w-full border border-gray-300 rounded-lg px-4 py-3 mb-4 focus:border-indigo-500 focus:outline-none"
+        />
         <button 
-          className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white py-3 rounded-lg font-medium hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200"
-          onClick={handleSignIn}
+          className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white py-3 rounded-lg font-medium hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          onClick={() => {
+            if (loginEmail) {
+              sessionStorage.setItem('login_email', loginEmail);
+              handleSignIn();
+            } else {
+              alert('Please enter your email');
+            }
+          }}
+          disabled={!loginEmail}
         >
-          {totpRegistered ? '📱 Sign In with TOTP' : passkeyRegistered ? '🔑 Sign In with Passkey' : 'Sign In with Cognito'}
+          📱 Sign In with MFA
         </button>
       </div>
 
       {showTotpVerify && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl p-6 max-w-md w-full">
-            <h3 className="text-xl font-bold text-gray-800 mb-4">📱 Enter Authenticator Code</h3>
+            <h3 className="text-xl font-bold text-gray-800 mb-4">📱 MFA Required</h3>
+            <p className="text-sm text-gray-600 mb-2">
+              Email: <strong>{sessionStorage.getItem('login_email')}</strong>
+            </p>
             <p className="text-sm text-gray-600 mb-4">
-              Open your authenticator app and enter the 6-digit code
+              Enter the 6-digit code from your authenticator app
             </p>
             <input
               type="text"

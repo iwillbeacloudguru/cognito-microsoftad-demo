@@ -505,8 +505,7 @@ function App() {
               onClick={() => {
                 localStorage.clear();
                 sessionStorage.clear();
-                auth.removeUser();
-                window.location.href = '/';
+                signOutRedirect();
               }}
             >
               🚪 Sign Out

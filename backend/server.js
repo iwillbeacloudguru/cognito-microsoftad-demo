@@ -72,6 +72,9 @@ app.post('/v2/mfa/register', async (req, res) => {
       'INSERT INTO mfa_devices (user_id, device_type, device_name, totp_secret, passkey_credential_id) VALUES ($1, $2, $3, $4, $5) RETURNING *',
       [user_id, device_type, device_name, totp_secret, passkey_credential_id]
     );
+
+    await pool.query('UPDATE users SET mfa_compliant = true WHERE id = $1', [user_id]);
+
     res.json(result.rows[0]);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -126,6 +129,19 @@ app.delete('/v2/mfa/:id', async (req, res) => {
   const { id } = req.params;
   try {
     await pool.query('UPDATE mfa_devices SET is_active = false WHERE id = $1', [id]);
+    
+    const deviceResult = await pool.query('SELECT user_id FROM mfa_devices WHERE id = $1', [id]);
+    if (deviceResult.rows.length > 0) {
+      const user_id = deviceResult.rows[0].user_id;
+      const activeDevices = await pool.query(
+        'SELECT COUNT(*) FROM mfa_devices WHERE user_id = $1 AND is_active = true',
+        [user_id]
+      );
+      if (parseInt(activeDevices.rows[0].count) === 0) {
+        await pool.query('UPDATE users SET mfa_compliant = false WHERE id = $1', [user_id]);
+      }
+    }
+    
     res.json({ message: 'MFA device removed' });
   } catch (error) {
     res.status(500).json({ error: error.message });

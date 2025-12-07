@@ -37,11 +37,7 @@ function App() {
       const hasTOTP = devices.some(d => d.device_type === 'totp' && d.is_active);
       
       if (!hasTOTP) {
-        alert('MFA is not registered. Please register MFA first.');
-        localStorage.clear();
-        sessionStorage.clear();
-        auth.removeUser();
-        signOutRedirect();
+        setShowMfaSettings(true);
       } else if (!sessionStorage.getItem('mfa_verified')) {
         setShowTotpVerify(true);
       }

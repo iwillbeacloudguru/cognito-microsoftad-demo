@@ -22,6 +22,10 @@ function App() {
 
 
   useEffect(() => {
+    sessionStorage.removeItem('mfa_verified');
+  }, []);
+
+  useEffect(() => {
     if (auth.isAuthenticated && auth.user?.profile?.email) {
       syncUserToBackend();
       loadMfaDevicesFromBackend();
@@ -241,6 +245,8 @@ function App() {
   };
   
   const signOutRedirect = () => {
+    localStorage.clear();
+    sessionStorage.clear();
     const clientId = "5tai0tc43qpu5fq4l8hukmh9q3";
     const logoutUri = "https://demo.nttdata-cs.com";
     const cognitoDomain = "https://ap-southeast-1gysqnwnf1.auth.ap-southeast-1.amazoncognito.com";
@@ -361,11 +367,7 @@ function App() {
                   MFA Settings & Devices
                 </button>
                 <button 
-                  onClick={() => {
-                    localStorage.clear();
-                    sessionStorage.clear();
-                    signOutRedirect();
-                  }}
+                  onClick={signOutRedirect}
                   className="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
                 >
                   Sign Out

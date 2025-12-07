@@ -102,6 +102,7 @@ function MfaSettings({ user, onBack }) {
       setTotpRegistered(true);
       setShowTotpSetup(false);
       setTotpCode('');
+      onBack();
     } catch (error) {
       console.error('Failed to save TOTP:', error);
       alert('Failed to register TOTP. Please try again.');

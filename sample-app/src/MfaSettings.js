@@ -137,9 +137,11 @@ function MfaSettings({ user, onBack }) {
       <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-2xl w-full">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold text-gray-800">🔒 MFA Settings</h1>
-          <button onClick={onBack} className="text-gray-600 hover:text-gray-800">
-            ← Back
-          </button>
+          {totpRegistered && (
+            <button onClick={onBack} className="text-gray-600 hover:text-gray-800">
+              ← Back
+            </button>
+          )}
         </div>
 
         <div className="space-y-4">

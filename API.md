@@ -1,8 +1,14 @@
 # API Documentation
 
 ## Base URL
-- **Production**: `https://api.nttdata-cs.com/api`
-- **Local Development**: `http://localhost:4000/api`
+
+Configure in `.env` file:
+```
+REACT_APP_API_URL=https://api.nttdata-cs.com/v2
+```
+
+- **Production**: `https://api.nttdata-cs.com/v2`
+- **Local Development**: `http://localhost:4000/v2`
 
 ## Endpoints
 
@@ -29,7 +35,7 @@
 
 **cURL Example:**
 ```bash
-curl -X POST https://api.nttdata-cs.com/api/users \
+curl -X POST https://api.nttdata-cs.com/v2/users \
   -H "Content-Type: application/json" \
   -d '{"email":"user@example.com","cognito_sub":"abc123"}'
 ```
@@ -67,7 +73,7 @@ curl -X POST https://api.nttdata-cs.com/api/users \
 
 **cURL Example:**
 ```bash
-curl -X POST https://api.nttdata-cs.com/api/mfa/register \
+curl -X POST https://api.nttdata-cs.com/v2/mfa/register \
   -H "Content-Type: application/json" \
   -d '{
     "user_email":"user@example.com",
@@ -100,7 +106,7 @@ curl -X POST https://api.nttdata-cs.com/api/mfa/register \
 
 **cURL Example:**
 ```bash
-curl https://api.nttdata-cs.com/api/mfa/user@example.com
+curl https://api.nttdata-cs.com/v2/mfa/user@example.com
 ```
 
 ---
@@ -126,7 +132,7 @@ curl https://api.nttdata-cs.com/api/mfa/user@example.com
 
 **cURL Example:**
 ```bash
-curl -X PUT https://api.nttdata-cs.com/api/mfa/1 \
+curl -X PUT https://api.nttdata-cs.com/v2/mfa/1 \
   -H "Content-Type: application/json" \
   -d '{"device_name":"My Authenticator"}'
 ```
@@ -146,7 +152,7 @@ curl -X PUT https://api.nttdata-cs.com/api/mfa/1 \
 
 **cURL Example:**
 ```bash
-curl -X PUT https://api.nttdata-cs.com/api/mfa/1/used
+curl -X PUT https://api.nttdata-cs.com/v2/mfa/1/used
 ```
 
 ---
@@ -163,7 +169,7 @@ curl -X PUT https://api.nttdata-cs.com/api/mfa/1/used
 
 **cURL Example:**
 ```bash
-curl -X DELETE https://api.nttdata-cs.com/api/mfa/1
+curl -X DELETE https://api.nttdata-cs.com/v2/mfa/1
 ```
 
 ---
@@ -220,7 +226,7 @@ await deleteMfaDevice(1);
 ## Testing with Postman
 
 1. Import collection from `postman_collection.json`
-2. Set base URL: `https://api.nttdata-cs.com/api`
+2. Set base URL: `https://api.nttdata-cs.com/v2`
 3. Test all endpoints
 
 ---

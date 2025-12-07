@@ -1,6 +1,10 @@
-const API_URL = process.env.REACT_APP_API_URL || 'https://api.nttdata-cs.com/api';
+const API_URL = process.env.REACT_APP_API_URL;
 
 console.log('🔗 API URL:', API_URL);
+
+if (!API_URL) {
+  console.error('❌ REACT_APP_API_URL is not defined in .env file');
+}
 
 export const createUser = async (email, cognitoSub) => {
   console.log('📤 API Call: POST /users', { email, cognitoSub });

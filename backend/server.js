@@ -23,14 +23,14 @@ app.get('/', (req, res) => {
   res.json({ 
     status: 'ok', 
     message: 'MFA Backend API',
-    version: '1.0.0',
+    version: '2.0.0',
     endpoints: {
-      users: 'POST /api/users',
-      register: 'POST /api/mfa/register',
-      devices: 'GET /api/mfa/:email',
-      update: 'PUT /api/mfa/:id',
-      updateUsed: 'PUT /api/mfa/:id/used',
-      delete: 'DELETE /api/mfa/:id'
+      users: 'POST /v2/users',
+      register: 'POST /v2/mfa/register',
+      devices: 'GET /v2/mfa/:email',
+      update: 'PUT /v2/mfa/:id',
+      updateUsed: 'PUT /v2/mfa/:id/used',
+      delete: 'DELETE /v2/mfa/:id'
     }
   });
 });
@@ -45,7 +45,7 @@ app.get('/health', async (req, res) => {
 });
 
 // Create or get user
-app.post('/api/users', async (req, res) => {
+app.post('/v2/users', async (req, res) => {
   const { email, cognito_sub } = req.body;
   try {
     const result = await pool.query(
@@ -59,7 +59,7 @@ app.post('/api/users', async (req, res) => {
 });
 
 // Register MFA device
-app.post('/api/mfa/register', async (req, res) => {
+app.post('/v2/mfa/register', async (req, res) => {
   const { user_email, device_type, device_name, totp_secret, passkey_credential_id } = req.body;
   try {
     const userResult = await pool.query('SELECT id FROM users WHERE email = $1', [user_email]);
@@ -79,7 +79,7 @@ app.post('/api/mfa/register', async (req, res) => {
 });
 
 // Get user MFA devices
-app.get('/api/mfa/:email', async (req, res) => {
+app.get('/v2/mfa/:email', async (req, res) => {
   const { email } = req.params;
   try {
     const result = await pool.query(
@@ -93,7 +93,7 @@ app.get('/api/mfa/:email', async (req, res) => {
 });
 
 // Update MFA device
-app.put('/api/mfa/:id', async (req, res) => {
+app.put('/v2/mfa/:id', async (req, res) => {
   const { id } = req.params;
   const { device_name } = req.body;
   try {
@@ -108,7 +108,7 @@ app.put('/api/mfa/:id', async (req, res) => {
 });
 
 // Update MFA device last used
-app.put('/api/mfa/:id/used', async (req, res) => {
+app.put('/v2/mfa/:id/used', async (req, res) => {
   const { id } = req.params;
   try {
     const result = await pool.query(
@@ -122,7 +122,7 @@ app.put('/api/mfa/:id/used', async (req, res) => {
 });
 
 // Delete MFA device
-app.delete('/api/mfa/:id', async (req, res) => {
+app.delete('/v2/mfa/:id', async (req, res) => {
   const { id } = req.params;
   try {
     await pool.query('UPDATE mfa_devices SET is_active = false WHERE id = $1', [id]);
@@ -134,6 +134,6 @@ app.delete('/api/mfa/:id', async (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`🚀 Backend server running on port ${PORT}`);
-  console.log(`📍 API: http://localhost:${PORT}/api`);
+  console.log(`📍 API: http://localhost:${PORT}/v2`);
   console.log(`💚 Health: http://localhost:${PORT}/health`);
 });

@@ -445,30 +445,6 @@ function App() {
               </div>
             )}
 
-            {!totpRegistered && (
-              <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
-                <p className="text-xs text-green-800 mb-2">📱 Setup Virtual MFA (Authenticator App)</p>
-                <button
-                  onClick={setupTotp}
-                  className="text-xs bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600 transition-colors"
-                >
-                  Setup Authenticator
-                </button>
-              </div>
-            )}
-
-            {passkeySupported && !passkeyRegistered && (
-              <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 mb-4">
-                <p className="text-xs text-purple-800 mb-2">🔑 Enhance your security with Passkey</p>
-                <button
-                  onClick={() => setShowPasskeySetup(true)}
-                  className="text-xs bg-purple-500 text-white px-3 py-1 rounded hover:bg-purple-600 transition-colors"
-                >
-                  Register Passkey
-                </button>
-              </div>
-            )}
-
             <div className="space-y-3 mt-4">
               <div className="bg-white border border-gray-200 rounded-lg p-4">
                 <div className="text-xs font-semibold text-gray-500 uppercase mb-2">ID Token</div>

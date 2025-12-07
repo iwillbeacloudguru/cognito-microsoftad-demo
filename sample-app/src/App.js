@@ -454,6 +454,7 @@ function App() {
   };
 
   const handleSignIn = async () => {
+    sessionStorage.removeItem('mfa_verified');
     auth.signinRedirect();
   };
 

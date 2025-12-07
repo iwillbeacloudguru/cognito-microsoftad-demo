@@ -362,7 +362,7 @@ function App() {
   
   const signOutRedirect = () => {
     const clientId = "5tai0tc43qpu5fq4l8hukmh9q3";
-    const logoutUri = "<logout uri>";
+    const logoutUri = "https://demo.nttdata-cs.com";
     const cognitoDomain = "https://ap-southeast-1gysqnwnf1.auth.ap-southeast-1.amazoncognito.com";
     window.location.href = `${cognitoDomain}/logout?client_id=${clientId}&logout_uri=${encodeURIComponent(logoutUri)}`;
   };

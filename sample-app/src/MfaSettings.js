@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
+import { registerMfaDevice, getMfaDevices, deleteMfaDevice } from './api';
 
 function MfaSettings({ user, onBack }) {
   const [totpRegistered, setTotpRegistered] = useState(false);
@@ -12,7 +13,20 @@ function MfaSettings({ user, onBack }) {
 
   useEffect(() => {
     checkMfaStatus();
+    loadMfaDevices();
   }, []);
+
+  const loadMfaDevices = async () => {
+    try {
+      const devices = await getMfaDevices(user?.email);
+      const hasTOTP = devices.some(d => d.device_type === 'totp' && d.is_active);
+      const hasPasskey = devices.some(d => d.device_type === 'passkey' && d.is_active);
+      setTotpRegistered(hasTOTP);
+      setPasskeyRegistered(hasPasskey);
+    } catch (error) {
+      console.error('Failed to load MFA devices:', error);
+    }
+  };
 
   const checkMfaStatus = () => {
     setTotpRegistered(localStorage.getItem('totp_registered') === 'true');
@@ -98,13 +112,28 @@ function MfaSettings({ user, onBack }) {
     setTotpRegistered(true);
     setShowTotpSetup(false);
     setTotpCode('');
+
+    try {
+      await registerMfaDevice(user?.email, 'totp', 'Authenticator App', totpSecret, null);
+    } catch (error) {
+      console.error('Failed to save TOTP:', error);
+    }
   };
 
-  const removeTotpMfa = () => {
+  const removeTotpMfa = async () => {
     if (window.confirm('Are you sure you want to remove TOTP MFA?')) {
-      localStorage.removeItem('totp_registered');
-      localStorage.removeItem('totp_secret');
-      setTotpRegistered(false);
+      try {
+        const devices = await getMfaDevices(user?.email);
+        const totpDevice = devices.find(d => d.device_type === 'totp' && d.is_active);
+        if (totpDevice) {
+          await deleteMfaDevice(totpDevice.id);
+        }
+        localStorage.removeItem('totp_registered');
+        localStorage.removeItem('totp_secret');
+        setTotpRegistered(false);
+      } catch (error) {
+        console.error('Failed to remove TOTP:', error);
+      }
     }
   };
 
@@ -147,6 +176,12 @@ function MfaSettings({ user, onBack }) {
         localStorage.setItem('passkey_credential_id', credential.id);
         setPasskeyRegistered(true);
         setShowPasskeySetup(false);
+
+        try {
+          await registerMfaDevice(user?.email, 'passkey', 'Biometric Device', null, credential.id);
+        } catch (error) {
+          console.error('Failed to save passkey:', error);
+        }
       }
     } catch (error) {
       console.error('Passkey registration failed:', error);
@@ -154,11 +189,20 @@ function MfaSettings({ user, onBack }) {
     }
   };
 
-  const removePasskey = () => {
+  const removePasskey = async () => {
     if (window.confirm('Are you sure you want to remove Passkey?')) {
-      localStorage.removeItem('passkey_registered');
-      localStorage.removeItem('passkey_credential_id');
-      setPasskeyRegistered(false);
+      try {
+        const devices = await getMfaDevices(user?.email);
+        const passkeyDevice = devices.find(d => d.device_type === 'passkey' && d.is_active);
+        if (passkeyDevice) {
+          await deleteMfaDevice(passkeyDevice.id);
+        }
+        localStorage.removeItem('passkey_registered');
+        localStorage.removeItem('passkey_credential_id');
+        setPasskeyRegistered(false);
+      } catch (error) {
+        console.error('Failed to remove passkey:', error);
+      }
     }
   };
 

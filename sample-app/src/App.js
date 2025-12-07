@@ -3,6 +3,8 @@ import { useAuth } from "react-oidc-context";
 import { useState, useEffect } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import MfaSettings from './MfaSettings';
+import MfaCrud from './MfaCrud';
+import { createUser, registerMfaDevice, getMfaDevices, updateMfaUsed } from './api';
 
 function App() {
   const auth = useAuth();
@@ -18,12 +20,40 @@ function App() {
   const [showTotpVerify, setShowTotpVerify] = useState(false);
   const [totpVerifyCode, setTotpVerifyCode] = useState('');
   const [showMfaSettings, setShowMfaSettings] = useState(false);
+  const [showMfaCrud, setShowMfaCrud] = useState(false);
   
   useEffect(() => {
     checkPasskeySupport();
     checkPasskeyRegistration();
     checkTotpRegistration();
   }, []);
+
+  useEffect(() => {
+    if (auth.isAuthenticated && auth.user?.profile?.email) {
+      syncUserToBackend();
+      loadMfaDevicesFromBackend();
+    }
+  }, [auth.isAuthenticated]);
+
+  const syncUserToBackend = async () => {
+    try {
+      await createUser(auth.user.profile.email, auth.user.profile.sub);
+    } catch (error) {
+      console.error('Failed to sync user:', error);
+    }
+  };
+
+  const loadMfaDevicesFromBackend = async () => {
+    try {
+      const devices = await getMfaDevices(auth.user.profile.email);
+      const hasTOTP = devices.some(d => d.device_type === 'totp' && d.is_active);
+      const hasPasskey = devices.some(d => d.device_type === 'passkey' && d.is_active);
+      if (hasTOTP) setTotpRegistered(true);
+      if (hasPasskey) setPasskeyRegistered(true);
+    } catch (error) {
+      console.error('Failed to load MFA devices:', error);
+    }
+  };
 
   const checkTotpRegistration = () => {
     const registered = localStorage.getItem('totp_registered') === 'true';
@@ -113,6 +143,18 @@ function App() {
       method: 'totp',
       timestamp: new Date().toISOString()
     });
+
+    try {
+      await registerMfaDevice(
+        auth.user?.profile?.email,
+        'totp',
+        'Authenticator App',
+        totpSecret,
+        null
+      );
+    } catch (error) {
+      console.error('Failed to save TOTP to backend:', error);
+    }
   };
 
   const getTotpUri = () => {
@@ -192,6 +234,18 @@ function App() {
           method: 'passkey',
           timestamp: new Date().toISOString()
         });
+
+        try {
+          await registerMfaDevice(
+            auth.user?.profile?.email,
+            'passkey',
+            'Biometric Device',
+            null,
+            credential.id
+          );
+        } catch (error) {
+          console.error('Failed to save passkey to backend:', error);
+        }
       }
     } catch (error) {
       console.error('Passkey registration failed:', error);
@@ -330,6 +384,10 @@ function App() {
   }
 
   if (auth.isAuthenticated) {
+    if (showMfaCrud) {
+      return <MfaCrud user={auth.user?.profile} onBack={() => setShowMfaCrud(false)} />;
+    }
+    
     if (showMfaSettings) {
       return <MfaSettings user={auth.user?.profile} onBack={() => setShowMfaSettings(false)} />;
     }
@@ -408,15 +466,23 @@ function App() {
             </div>
           </div>
 
-          <div className="flex gap-3">
+          <div className="space-y-3">
+            <div className="flex gap-3">
+              <button 
+                className="flex-1 bg-indigo-500 text-white py-3 rounded-lg font-medium hover:bg-indigo-600 hover:-translate-y-0.5 transition-all duration-200"
+                onClick={() => setShowMfaSettings(true)}
+              >
+                ⚙️ MFA Settings
+              </button>
+              <button 
+                className="flex-1 bg-purple-500 text-white py-3 rounded-lg font-medium hover:bg-purple-600 hover:-translate-y-0.5 transition-all duration-200"
+                onClick={() => setShowMfaCrud(true)}
+              >
+                📋 Manage Devices
+              </button>
+            </div>
             <button 
-              className="flex-1 bg-indigo-500 text-white py-3 rounded-lg font-medium hover:bg-indigo-600 hover:-translate-y-0.5 transition-all duration-200"
-              onClick={() => setShowMfaSettings(true)}
-            >
-              ⚙️ MFA Settings
-            </button>
-            <button 
-              className="flex-1 bg-red-500 text-white py-3 rounded-lg font-medium hover:bg-red-600 hover:-translate-y-0.5 transition-all duration-200"
+              className="w-full bg-red-500 text-white py-3 rounded-lg font-medium hover:bg-red-600 hover:-translate-y-0.5 transition-all duration-200"
               onClick={() => auth.removeUser()}
             >
               🚪 Sign Out
@@ -512,6 +578,17 @@ function App() {
 
     setShowTotpVerify(false);
     setTotpVerifyCode('');
+    
+    try {
+      const devices = await getMfaDevices(auth.user?.profile?.email);
+      const totpDevice = devices.find(d => d.device_type === 'totp' && d.is_active);
+      if (totpDevice) {
+        await updateMfaUsed(totpDevice.id);
+      }
+    } catch (error) {
+      console.error('Failed to update MFA usage:', error);
+    }
+    
     auth.signinRedirect();
   };
 

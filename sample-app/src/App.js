@@ -487,7 +487,11 @@ function App() {
             </div>
             <button 
               className="w-full bg-red-500 text-white py-3 rounded-lg font-medium hover:bg-red-600 hover:-translate-y-0.5 transition-all duration-200"
-              onClick={() => auth.removeUser()}
+              onClick={() => {
+                localStorage.clear();
+                sessionStorage.clear();
+                auth.removeUser();
+              }}
             >
               🚪 Sign Out
             </button>

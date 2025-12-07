@@ -1,6 +1,9 @@
 const API_URL = process.env.REACT_APP_API_URL || 'https://api.nttdata-cs.com/api';
 
+console.log('🔗 API URL:', API_URL);
+
 export const createUser = async (email, cognitoSub) => {
+  console.log('📤 API Call: POST /users', { email, cognitoSub });
   const response = await fetch(`${API_URL}/users`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -10,6 +13,7 @@ export const createUser = async (email, cognitoSub) => {
 };
 
 export const registerMfaDevice = async (userEmail, deviceType, deviceName, totpSecret, passkeyCredentialId) => {
+  console.log('📤 API Call: POST /mfa/register', { userEmail, deviceType, deviceName });
   const response = await fetch(`${API_URL}/mfa/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -25,11 +29,13 @@ export const registerMfaDevice = async (userEmail, deviceType, deviceName, totpS
 };
 
 export const getMfaDevices = async (email) => {
+  console.log('📤 API Call: GET /mfa/' + email);
   const response = await fetch(`${API_URL}/mfa/${email}`);
   return response.json();
 };
 
 export const updateMfaUsed = async (deviceId) => {
+  console.log('📤 API Call: PUT /mfa/' + deviceId + '/used');
   const response = await fetch(`${API_URL}/mfa/${deviceId}/used`, {
     method: 'PUT',
   });
@@ -37,6 +43,7 @@ export const updateMfaUsed = async (deviceId) => {
 };
 
 export const deleteMfaDevice = async (deviceId) => {
+  console.log('📤 API Call: DELETE /mfa/' + deviceId);
   const response = await fetch(`${API_URL}/mfa/${deviceId}`, {
     method: 'DELETE',
   });

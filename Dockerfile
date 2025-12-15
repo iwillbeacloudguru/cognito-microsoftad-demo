@@ -1,7 +1,7 @@
 FROM node:18-alpine AS build
 WORKDIR /app
 COPY sample-app/package*.json ./
-RUN npm ci --silent
+RUN npm install
 COPY sample-app/src ./src
 COPY sample-app/public ./public
 RUN npm run build

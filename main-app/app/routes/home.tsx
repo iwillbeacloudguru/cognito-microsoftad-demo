@@ -80,18 +80,26 @@ export default function Home() {
     "hr-system": {
       "name": "HR Management",
       "description": "Employee records and HR processes",
-      "gradient": "from-green-500 to-green-700",
-      "requiredGroups": ["hr-users"],
-      "adfsGroups": ["HR Department"],
-      "adfsProvider": "ms-adfs"
+      "gradient": "from-blue-500 to-blue-700",
+      "cognitoGroups": ["hr-users", "admin-group"],
+      "adfsUserPatterns": ["hr-", "human-resource"],
+      "adfsGroups": ["HR Department", "Human Resources"]
     },
     "finance-dashboard": {
       "name": "Finance Dashboard",
       "description": "Financial analytics and reporting",
-      "gradient": "from-yellow-500 to-yellow-700",
-      "requiredGroups": ["finance-team"],
-      "adfsGroups": ["Finance Department"],
-      "adfsProvider": "ms-adfs"
+      "gradient": "from-blue-600 to-blue-800",
+      "cognitoGroups": ["finance-team", "admin-group"],
+      "adfsUserPatterns": ["finance-", "accounting-", "application-user"],
+      "adfsGroups": ["Finance Department", "Accounting"]
+    },
+    "it-portal": {
+      "name": "IT Portal",
+      "description": "System administration and IT support",
+      "gradient": "from-blue-400 to-blue-600",
+      "cognitoGroups": ["it-support", "admin-group"],
+      "adfsUserPatterns": ["it-", "admin-", "tech-"],
+      "adfsGroups": ["IT Department", "System Administrators"]
     }
   };
 
@@ -106,14 +114,27 @@ export default function Home() {
     );
 
     if (isAdfsUser) {
-      // User is from ADFS - check if they have required ADFS groups
-      // For now, simulate by checking if app has adfsGroups defined
-      return app.adfsGroups.length > 0;
-    } else {
-      // User is from Cognito pool - check requiredGroups
-      return app.requiredGroups.some(group => 
-        auth.user?.profile['cognito:groups']?.includes(group)
+      // User is from ADFS - check user patterns or ADFS groups
+      const userEmail = auth.user?.profile.email || '';
+      const username = auth.user?.profile['cognito:username'] || '';
+      const userText = `${userEmail} ${username}`.toLowerCase();
+      
+      // Check if user matches any pattern
+      const matchesPattern = app.adfsUserPatterns?.some(pattern => 
+        userText.includes(pattern.toLowerCase())
       );
+      
+      // Check if user has specific ADFS groups (if available)
+      const hasAdfsGroup = app.adfsGroups?.some(adfsGroup => 
+        auth.user?.profile['custom:adfs_groups']?.includes(adfsGroup)
+      );
+      
+      return matchesPattern || hasAdfsGroup;
+    } else {
+      // User is from Cognito pool - check cognito groups
+      return app.cognitoGroups?.some(group => 
+        auth.user?.profile['cognito:groups']?.includes(group)
+      ) || false;
     }
   };
 

@@ -1,7 +1,12 @@
+/**
+ * Main Home component for the Cognito Microsoft AD Demo application
+ * Handles authentication flow, user session management, and application access control
+ */
 import { useAuth } from "react-oidc-context";
 import { useEffect, useState } from "react";
 import type { Route } from "./+types/home";
 
+// Meta information for the page
 export function meta({}: Route.MetaArgs) {
   return [
     { title: "Cognito Microsoft AD Demo" },
@@ -10,24 +15,48 @@ export function meta({}: Route.MetaArgs) {
 }
 
 export default function Home() {
+  // Hook to access authentication context
   const auth = useAuth();
+  // State to control visibility of authentication tokens
   const [showTokens, setShowTokens] = useState(false);
 
+  // Handle stale authentication states
   useEffect(() => {
     if (auth.error && auth.error.message.includes("No matching state found")) {
+      // Clear URL parameters and stale state when auth state mismatch occurs
       window.history.replaceState({}, document.title, window.location.pathname);
       auth.clearStaleState();
     }
   }, [auth.error]);
 
-  const signOutRedirect = () => {
-    auth.removeUser();
-    const cognitoDomain = "https://auth.nttdata-cs.com";
-    const clientId = "5tai0tc43qpu5fq4l8hukmh9q3";
-    const logoutUri = "https://demo.nttdata-cs.com";
-    window.location.href = `${cognitoDomain}/logout?client_id=${clientId}&logout_uri=${encodeURIComponent(logoutUri)}`;
+  /**
+   * Handles user sign out process
+   * 1. Removes local user session
+   * 2. Revokes tokens at Cognito
+   * 3. Redirects to logout URL
+   */
+  const signOutRedirect = async () => {
+    try {
+      // Clear local session first
+      await auth.removeUser();
+      
+      // Revoke tokens at Cognito
+      // Cognito configuration for logout
+      const cognitoDomain = "https://auth.nttdata-cs.com";
+      const clientId = "5tai0tc43qpu5fq4l8hukmh9q3";
+      const logoutUri = "https://demo.nttdata-cs.com";
+      
+      // Use Cognito's logout endpoint which revokes sessions
+      window.location.href = `${cognitoDomain}/logout?client_id=${clientId}&logout_uri=${encodeURIComponent(logoutUri)}&response_type=code`;
+    } catch (error) {
+      console.error('Error during signout:', error);
+      // Fallback to direct redirect
+      // Fallback to direct redirect on error
+      window.location.href = "https://demo.nttdata-cs.com";
+    }
   };
 
+  // Loading state UI
   if (auth.isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
@@ -39,7 +68,9 @@ export default function Home() {
     );
   }
 
+  // Error state handling
   if (auth.error) {
+    // Handle expired session error
     if (auth.error.message.includes("No matching state found")) {
       return (
         <div className="min-h-screen bg-gradient-to-br from-red-50 to-pink-100 flex items-center justify-center">
@@ -63,6 +94,7 @@ export default function Home() {
         </div>
       );
     }
+    // Handle other authentication errors
     return (
       <div className="min-h-screen bg-gradient-to-br from-red-50 to-pink-100 flex items-center justify-center">
         <div className="bg-white p-8 rounded-lg shadow-lg max-w-md w-full mx-4">
@@ -76,6 +108,7 @@ export default function Home() {
   }
 
   // Application-Group mapping configuration
+  // Application access control configuration
   const appConfig = {
     "hr-system": {
       "name": "HR Management",
@@ -87,6 +120,7 @@ export default function Home() {
     },
     "finance-dashboard": {
       "name": "Finance Dashboard",
+      "name": "Finance Dashboard", 
       "description": "Financial analytics and reporting",
       "gradient": "from-blue-800 to-blue-800",
       "cognitoGroups": ["finance-team", "admin-group"],
@@ -104,27 +138,37 @@ export default function Home() {
   };
 
   // Function to check if user has access to an application
+  /**
+   * Checks if current user has access to a specific application
+   * Handles both ADFS and Cognito authentication sources
+   * @param appKey - Key of the application to check access for
+   * @returns boolean indicating if user has access
+   */
   const hasAccess = (appKey: string) => {
     const app = appConfig[appKey as keyof typeof appConfig];
     if (!app) return false;
 
     // First check: Is user from ADFS or Cognito?
+    // Determine if user is authenticated via ADFS
     const isAdfsUser = auth.user?.profile['cognito:groups']?.some((group: string) => 
       group.includes('ap-southeast-1_gYsQnwNf1_ms-adfs')
     );
 
     if (isAdfsUser) {
       // User is from ADFS - check user patterns or ADFS groups
+      // ADFS user access logic
       const userEmail = auth.user?.profile.email || '';
       const username = auth.user?.profile['cognito:username'] || '';
       const userText = `${userEmail} ${username}`.toLowerCase();
       
       // Check if user matches any pattern
+      // Check user patterns
       const matchesPattern = app.adfsUserPatterns?.some(pattern => 
         userText.includes(pattern.toLowerCase())
       );
       
       // Check if user has specific ADFS groups (if available)
+      // Check ADFS groups
       const hasAdfsGroup = app.adfsGroups?.some(adfsGroup => 
         auth.user?.profile['custom:adfs_groups']?.includes(adfsGroup)
       );
@@ -132,12 +176,14 @@ export default function Home() {
       return matchesPattern || hasAdfsGroup;
     } else {
       // User is from Cognito pool - check cognito groups
+      // Cognito user access logic
       return app.cognitoGroups?.some(group => 
         auth.user?.profile['cognito:groups']?.includes(group)
       ) || false;
     }
   };
 
+  // Render authenticated user interface
   if (auth.isAuthenticated) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100">
@@ -330,8 +376,10 @@ export default function Home() {
         </div>
       </div>
     );
+    // ... Rest of the authenticated UI code ...
   }
 
+  // Render login screen for unauthenticated users
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-blue-100 flex items-center justify-center">
       <div className="max-w-md w-full mx-4">
@@ -371,5 +419,6 @@ export default function Home() {
         </div>
       </div>
     </div>
+    // ... Login screen UI code ...
   );
 }

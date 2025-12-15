@@ -64,12 +64,23 @@ export default function Home() {
     }
   };
 
-  const signOutRedirect = () => {
-    auth.removeUser();
-    const cognitoDomain = "https://auth.nttdata-cs.com";
-    const clientId = "5tai0tc43qpu5fq4l8hukmh9q3";
-    const logoutUri = "https://demo.nttdata-cs.com";
-    window.location.href = `${cognitoDomain}/logout?client_id=${clientId}&logout_uri=${encodeURIComponent(logoutUri)}`;
+  const signOutRedirect = async () => {
+    try {
+      // Clear local session first
+      await auth.removeUser();
+      
+      // Revoke tokens at Cognito
+      const cognitoDomain = "https://auth.nttdata-cs.com";
+      const clientId = "5tai0tc43qpu5fq4l8hukmh9q3";
+      const logoutUri = "https://demo.nttdata-cs.com";
+      
+      // Use Cognito's logout endpoint which revokes sessions
+      window.location.href = `${cognitoDomain}/logout?client_id=${clientId}&logout_uri=${encodeURIComponent(logoutUri)}&response_type=code`;
+    } catch (error) {
+      console.error('Error during signout:', error);
+      // Fallback to direct redirect
+      window.location.href = "https://demo.nttdata-cs.com";
+    }
   };
 
   if (auth.isLoading) {
@@ -123,10 +134,10 @@ export default function Home() {
                   <p className="text-blue-100">Employee records and HR processes</p>
                 </div>
                 <button 
-                  onClick={() => signOutRedirect()}
-                  className="bg-white bg-opacity-20 text-white px-4 py-2 rounded-md hover:bg-opacity-30 transition duration-200"
+                  onClick={() => window.close()}
+                  className="bg-white text-blue-600 px-4 py-2 rounded-md hover:bg-blue-50 transition duration-200"
                 >
-                  Sign Out
+                  Close & Back to Main App
                 </button>
               </div>
             </div>

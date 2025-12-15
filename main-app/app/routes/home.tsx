@@ -115,6 +115,26 @@ export default function Home() {
                 </div>
 
                 <div className="mb-6">
+                  <h2 className="text-lg font-semibold text-gray-900 mb-4">Available Microsites</h2>
+                  <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg p-6 text-white">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="text-xl font-bold mb-2">NTTDATA-CS Portal</h3>
+                        <p className="text-blue-100 mb-4">Access your corporate applications and resources</p>
+                        <button className="bg-white text-blue-600 px-4 py-2 rounded-md font-medium hover:bg-blue-50 transition duration-200">
+                          Launch Portal
+                        </button>
+                      </div>
+                      <div className="h-16 w-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                        <svg className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9v-9m0-9v9" />
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mb-6">
                   <div className="flex items-center justify-between mb-3">
                     <h2 className="text-lg font-semibold text-gray-900">Authentication Tokens</h2>
                     <button

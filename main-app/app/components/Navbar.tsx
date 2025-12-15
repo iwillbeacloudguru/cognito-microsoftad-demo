@@ -1,4 +1,5 @@
 import { useAuth } from "react-oidc-context";
+import { useState } from "react";
 
 interface NavbarProps {
   mfaEnabled: boolean;
@@ -18,6 +19,7 @@ export default function Navbar({
   onSignOut 
 }: NavbarProps) {
   const auth = useAuth();
+  const [showDropdown, setShowDropdown] = useState(false);
 
   return (
     <nav className="bg-blue-600 text-white px-6 py-4">
@@ -28,23 +30,39 @@ export default function Navbar({
         </div>
         
         <div className="flex items-center space-x-4">
-          <a href="/mfa" className="text-blue-100 hover:text-white text-sm">
-            Profile
-          </a>
-          
-          <button
-            onClick={() => setShowTokens(!showTokens)}
-            className="text-blue-100 hover:text-white text-sm"
-          >
-            Tokens
-          </button>
-          
-          <button 
-            onClick={onSignOut}
-            className="bg-blue-700 hover:bg-blue-800 px-3 py-1 rounded text-sm"
-          >
-            Sign Out
-          </button>
+          <div className="relative">
+            <button
+              onClick={() => setShowDropdown(!showDropdown)}
+              className="flex items-center text-blue-100 hover:text-white text-sm"
+            >
+              <svg className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+              Menu
+            </button>
+            
+            {showDropdown && (
+              <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10">
+                <div className="py-1">
+                  <a href="/mfa" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                    Profile & MFA
+                  </a>
+                  <button
+                    onClick={() => { setShowTokens(!showTokens); setShowDropdown(false); }}
+                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  >
+                    {showTokens ? 'Hide' : 'Show'} Tokens
+                  </button>
+                  <button
+                    onClick={() => { onSignOut(); setShowDropdown(false); }}
+                    className="block w-full text-left px-4 py-2 text-sm text-red-700 hover:bg-red-50"
+                  >
+                    Sign Out
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </nav>

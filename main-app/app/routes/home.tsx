@@ -288,8 +288,8 @@ export default function Home() {
       <div className="min-h-screen bg-blue-50">
         <Navbar 
           mfaEnabled={mfaEnabled}
-          showMfaManage={showMfaManage}
-          setShowMfaManage={setShowMfaManage}
+          showMfaManage={false}
+          setShowMfaManage={() => {}}
           showTokens={showTokens}
           setShowTokens={setShowTokens}
           onSignOut={signOutRedirect}
@@ -423,18 +423,9 @@ export default function Home() {
                   </div>
                 </div>
 
-                <div className="mb-6">
-                  <div className="flex items-center justify-between mb-3">
-                    <h2 className="text-lg font-semibold text-gray-900">Authentication Tokens</h2>
-                    <button
-                      onClick={() => setShowTokens(!showTokens)}
-                      className="text-indigo-600 hover:text-indigo-800 text-sm font-medium"
-                    >
-                      {showTokens ? 'Hide' : 'Show'} Tokens
-                    </button>
-                  </div>
-                  
-                  {showTokens && (
+                {showTokens && (
+                  <div className="mb-6">
+                    <h2 className="text-lg font-semibold text-gray-900 mb-4">Authentication Tokens</h2>
                     <div className="space-y-4">
                       <div className="bg-gray-50 rounded-lg p-4">
                         <h3 className="font-medium text-gray-900 mb-2">ID Token</h3>
@@ -455,8 +446,8 @@ export default function Home() {
                         </div>
                       </div>
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
 
 
               </div>

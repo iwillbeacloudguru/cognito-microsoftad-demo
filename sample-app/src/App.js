@@ -6,10 +6,11 @@ import MfaSettings from './MfaSettings';
 import { createUser, registerMfaDevice, getMfaDevices, updateMfaUsed } from './api';
 
 // Override console to send logs to backend
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000';
 const originalConsole = { ...console };
 console.log = (...args) => {
   originalConsole.log(...args);
-  fetch('/api/logs', {
+  fetch(`${API_URL.replace('/v2', '')}/api/logs`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ level: 'log', message: args.join(' '), timestamp: new Date().toISOString() })
@@ -17,7 +18,7 @@ console.log = (...args) => {
 };
 console.error = (...args) => {
   originalConsole.error(...args);
-  fetch('/api/logs', {
+  fetch(`${API_URL.replace('/v2', '')}/api/logs`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ level: 'error', message: args.join(' '), timestamp: new Date().toISOString() })

@@ -23,13 +23,19 @@ function App() {
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
+    console.log('[DEBUG] App mounted, URL params:', Object.fromEntries(urlParams));
     if (!urlParams.has('code') && !urlParams.has('state')) {
+      console.log('[DEBUG] Clearing mfa_verified flag');
       sessionStorage.removeItem('mfa_verified');
+    } else {
+      console.log('[DEBUG] OAuth callback detected, keeping mfa_verified flag');
     }
   }, []);
 
   useEffect(() => {
+    console.log('[DEBUG] Auth state changed:', { isAuthenticated: auth.isAuthenticated, email: auth.user?.profile?.email });
     if (auth.isAuthenticated && auth.user?.profile?.email) {
+      console.log('[DEBUG] User authenticated, starting MFA check flow');
       syncUserToBackend();
       loadMfaDevicesFromBackend();
       checkMfaRequired();
@@ -38,16 +44,24 @@ function App() {
 
   const checkMfaRequired = async () => {
     try {
+      console.log('[DEBUG] Checking MFA requirements for:', auth.user.profile.email);
       const devices = await getMfaDevices(auth.user.profile.email);
+      console.log('[DEBUG] MFA devices found:', devices);
       const hasTOTP = devices.some(d => d.device_type === 'totp' && d.is_active);
+      const mfaVerified = sessionStorage.getItem('mfa_verified');
+      console.log('[DEBUG] MFA status:', { hasTOTP, mfaVerified });
       
       if (!hasTOTP) {
+        console.log('[DEBUG] No TOTP found, showing MFA settings');
         setShowMfaSettings(true);
-      } else if (!sessionStorage.getItem('mfa_verified')) {
+      } else if (!mfaVerified) {
+        console.log('[DEBUG] TOTP found but not verified, showing TOTP verify modal');
         setShowTotpVerify(true);
+      } else {
+        console.log('[DEBUG] MFA already verified, proceeding to app');
       }
     } catch (error) {
-      console.error('Failed to check MFA:', error);
+      console.error('[ERROR] Failed to check MFA:', error);
     }
   };
 
@@ -248,13 +262,17 @@ function App() {
   };
   
   const signOutRedirect = async () => {
+    console.log('[DEBUG] Sign out initiated');
     localStorage.clear();
     sessionStorage.clear();
+    console.log('[DEBUG] Storage cleared, removing OIDC user');
     await auth.removeUser();
     const clientId = "5tai0tc43qpu5fq4l8hukmh9q3";
     const logoutUri = "https://demo.nttdata-cs.com";
     const cognitoDomain = "https://ap-southeast-1gysqnwnf1.auth.ap-southeast-1.amazoncognito.com";
-    window.location.href = `${cognitoDomain}/logout?client_id=${clientId}&logout_uri=${encodeURIComponent(logoutUri)}&prompt=login`;
+    const logoutUrl = `${cognitoDomain}/logout?client_id=${clientId}&logout_uri=${encodeURIComponent(logoutUri)}&prompt=login`;
+    console.log('[DEBUG] Redirecting to logout URL:', logoutUrl);
+    window.location.href = logoutUrl;
   };
 
   if (auth.isLoading) {
@@ -433,44 +451,56 @@ function App() {
   }
 
   const verifyTotpLogin = async () => {
+    console.log('[DEBUG] TOTP verification attempt with code:', totpVerifyCode);
     if (totpVerifyCode.length !== 6) {
+      console.log('[DEBUG] Invalid code length:', totpVerifyCode.length);
       alert('Please enter a 6-digit code');
       return;
     }
 
     try {
       const email = auth.user?.profile?.email;
+      console.log('[DEBUG] Verifying TOTP for user:', email);
       if (!email) {
+        console.log('[ERROR] No email found in user profile');
         alert('User not authenticated');
         return;
       }
 
       const devices = await getMfaDevices(email);
       const totpDevice = devices.find(d => d.device_type === 'totp' && d.is_active);
+      console.log('[DEBUG] TOTP device found:', totpDevice);
       
       if (!totpDevice || !totpDevice.totp_secret) {
+        console.log('[ERROR] No TOTP device or secret found');
         alert('TOTP not configured for this user');
         return;
       }
 
       const validCode = await generateTOTP(totpDevice.totp_secret);
+      console.log('[DEBUG] Generated valid code:', validCode, 'User entered:', totpVerifyCode);
       if (totpVerifyCode !== validCode) {
+        console.log('[ERROR] TOTP code mismatch');
         alert('Invalid code. Please check your authenticator app.');
         return;
       }
 
+      console.log('[DEBUG] TOTP verification successful');
       await updateMfaUsed(totpDevice.id);
       sessionStorage.setItem('mfa_verified', 'true');
+      console.log('[DEBUG] MFA verified flag set, hiding modal');
       setShowTotpVerify(false);
       setTotpVerifyCode('');
     } catch (error) {
-      console.error('Failed to verify TOTP:', error);
+      console.error('[ERROR] Failed to verify TOTP:', error);
       alert('Failed to verify TOTP. Please try again.');
     }
   };
 
   const handleSignIn = async () => {
+    console.log('[DEBUG] Sign in initiated, clearing MFA verification');
     sessionStorage.removeItem('mfa_verified');
+    console.log('[DEBUG] Redirecting to Cognito for authentication');
     auth.signinRedirect();
   };
 

@@ -105,12 +105,6 @@ export default function Home() {
       auth.user?.profile['cognito:groups']?.includes(group)
     );
 
-    // Check ADFS provider access
-    const hasAdfsAccess = app.adfsProvider && 
-      auth.user?.profile['cognito:groups']?.some((group: string) => 
-        group.includes(app.adfsProvider!)
-      );
-
     // Check specific ADFS groups (if custom:adfs_groups is available)
     const hasAdfsGroups = app.adfsGroups.length > 0 && 
       auth.user?.profile['custom:adfs_groups'] && 
@@ -118,7 +112,7 @@ export default function Home() {
         auth.user?.profile['custom:adfs_groups']?.includes(adfsGroup)
       );
 
-    return hasRequiredGroup || hasAdfsAccess || hasAdfsGroups;
+    return hasRequiredGroup || hasAdfsGroups;
   };
 
   if (auth.isAuthenticated) {

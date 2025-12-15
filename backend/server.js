@@ -18,33 +18,23 @@ const pool = new Pool({
   password: process.env.DB_PASSWORD || 'mfa_password',
 });
 
-// Health check
-app.get('/', (req, res) => {
-  res.json({ 
-    status: 'ok', 
-    message: 'MFA Backend API',
-    version: '2.0.0',
-    endpoints: {
-      users: 'POST /v2/users',
-      register: 'POST /v2/mfa/register',
-      devices: 'GET /v2/mfa/:email',
-      update: 'PUT /v2/mfa/:id',
-      updateUsed: 'PUT /v2/mfa/:id/used',
-      delete: 'DELETE /v2/mfa/:id'
-    }
-  });
-});
-
-app.get('/health', async (req, res) => {
+app.get(['/', '/health'], async (req, res) => {
   try {
     await pool.query('SELECT 1');
-    res.json({ status: 'healthy', database: 'connected' });
+    res.json({ 
+      status: 'healthy', 
+      message: 'MFA Backend API v2.0.0',
+      database: 'connected'
+    });
   } catch (error) {
-    res.status(500).json({ status: 'unhealthy', database: 'disconnected', error: error.message });
+    res.status(500).json({ 
+      status: 'unhealthy', 
+      database: 'disconnected', 
+      error: error.message 
+    });
   }
 });
 
-// Create or get user
 app.post('/v2/users', async (req, res) => {
   const { email, cognito_sub } = req.body;
   try {
@@ -58,7 +48,6 @@ app.post('/v2/users', async (req, res) => {
   }
 });
 
-// Register MFA device
 app.post('/v2/mfa/register', async (req, res) => {
   const { user_email, device_type, device_name, totp_secret, passkey_credential_id } = req.body;
   try {
@@ -81,7 +70,6 @@ app.post('/v2/mfa/register', async (req, res) => {
   }
 });
 
-// Get user MFA devices
 app.get('/v2/mfa/:email', async (req, res) => {
   const { email } = req.params;
   try {
@@ -95,7 +83,6 @@ app.get('/v2/mfa/:email', async (req, res) => {
   }
 });
 
-// Update MFA device
 app.put('/v2/mfa/:id', async (req, res) => {
   const { id } = req.params;
   const { device_name } = req.body;
@@ -110,7 +97,6 @@ app.put('/v2/mfa/:id', async (req, res) => {
   }
 });
 
-// Update MFA device last used
 app.put('/v2/mfa/:id/used', async (req, res) => {
   const { id } = req.params;
   try {
@@ -124,7 +110,6 @@ app.put('/v2/mfa/:id/used', async (req, res) => {
   }
 });
 
-// Delete MFA device
 app.delete('/v2/mfa/:id', async (req, res) => {
   const { id } = req.params;
   try {
@@ -148,7 +133,6 @@ app.delete('/v2/mfa/:id', async (req, res) => {
   }
 });
 
-// Frontend logs endpoint
 app.post('/api/logs', (req, res) => {
   const { level, message, timestamp } = req.body;
   console.log(`[${timestamp}] [${level.toUpperCase()}] ${message}`);

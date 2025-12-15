@@ -7,9 +7,9 @@ services:
     ports:
       - "5432:5432"
     environment:
-      POSTGRES_DB: mfa_demo
-      POSTGRES_USER: mfa_user
-      POSTGRES_PASSWORD: mfa_password
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
@@ -30,9 +30,9 @@ services:
     environment:
       DB_HOST: postgres
       DB_PORT: 5432
-      DB_NAME: mfa_demo
-      DB_USER: mfa_user
-      DB_PASSWORD: mfa_password
+      DB_NAME: ${POSTGRES_DB}
+      DB_USER: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
       PORT: 4000
     depends_on:
       postgres:
@@ -51,6 +51,11 @@ services:
       - backend
     networks:
       - mfa-network
+    environment:
+      - REACT_APP_COGNITO_USER_POOL_ID=${REACT_APP_COGNITO_USER_POOL_ID}
+      - REACT_APP_COGNITO_CLIENT_ID=${REACT_APP_COGNITO_CLIENT_ID}
+      - REACT_APP_API_URL=${REACT_APP_API_URL}
+      - REACT_APP_TOTP_ISSUER=${REACT_APP_TOTP_ISSUER}
 
 volumes:
   postgres_data:

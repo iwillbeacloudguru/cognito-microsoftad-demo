@@ -1,55 +1,180 @@
-const API_URL = process.env.REACT_APP_API_URL;
+import { CognitoUserPool, CognitoUser, AuthenticationDetails, CognitoUserSession } from 'amazon-cognito-identity-js';
 
-console.log('🔗 API URL:', API_URL);
+const userPool = new CognitoUserPool({
+  UserPoolId: process.env.REACT_APP_COGNITO_USER_POOL_ID,
+  ClientId: process.env.REACT_APP_COGNITO_CLIENT_ID
+});
 
-if (!API_URL) {
-  console.error('❌ REACT_APP_API_URL is not defined in .env file');
-}
+export const signIn = async (username, password) => {
+  return new Promise((resolve, reject) => {
+    const authenticationDetails = new AuthenticationDetails({
+      Username: username,
+      Password: password
+    });
 
-export const createUser = async (email, cognitoSub) => {
-  console.log('📤 API Call: POST /users', { email, cognitoSub });
-  const response = await fetch(`${API_URL}/users`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, cognito_sub: cognitoSub }),
+    const cognitoUser = new CognitoUser({
+      Username: username,
+      Pool: userPool
+    });
+
+    cognitoUser.authenticateUser(authenticationDetails, {
+      onSuccess: (session) => {
+        resolve({ user: cognitoUser, session });
+      },
+      onFailure: (err) => {
+        reject(err);
+      },
+      totpRequired: (codeDeliveryDetails) => {
+        resolve({ user: cognitoUser, totpRequired: true, codeDeliveryDetails });
+      },
+      mfaRequired: (challengeName, challengeParameters) => {
+        resolve({ user: cognitoUser, mfaRequired: true, challengeName, challengeParameters });
+      }
+    });
   });
-  return response.json();
 };
 
-export const registerMfaDevice = async (userEmail, deviceType, deviceName, totpSecret, passkeyCredentialId) => {
-  console.log('📤 API Call: POST /mfa/register', { userEmail, deviceType, deviceName });
-  const response = await fetch(`${API_URL}/mfa/register`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      user_email: userEmail,
-      device_type: deviceType,
-      device_name: deviceName,
-      totp_secret: totpSecret,
-      passkey_credential_id: passkeyCredentialId,
-    }),
+export const verifyTotpCode = async (cognitoUser, totpCode) => {
+  return new Promise((resolve, reject) => {
+    cognitoUser.sendMFACode(totpCode, {
+      onSuccess: (session) => {
+        resolve(session);
+      },
+      onFailure: (err) => {
+        reject(err);
+      }
+    });
   });
-  return response.json();
 };
 
-export const getMfaDevices = async (email) => {
-  console.log('📤 API Call: GET /mfa/' + email);
-  const response = await fetch(`${API_URL}/mfa/${email}`);
-  return response.json();
+export const getCurrentUser = () => {
+  return userPool.getCurrentUser();
 };
 
-export const updateMfaUsed = async (deviceId) => {
-  console.log('📤 API Call: PUT /mfa/' + deviceId + '/used');
-  const response = await fetch(`${API_URL}/mfa/${deviceId}/used`, {
-    method: 'PUT',
+export const getCurrentSession = async () => {
+  return new Promise((resolve, reject) => {
+    const cognitoUser = getCurrentUser();
+    if (!cognitoUser) {
+      reject(new Error('No current user'));
+      return;
+    }
+
+    cognitoUser.getSession((err, session) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve({ user: cognitoUser, session });
+      }
+    });
   });
-  return response.json();
 };
 
-export const deleteMfaDevice = async (deviceId) => {
-  console.log('📤 API Call: DELETE /mfa/' + deviceId);
-  const response = await fetch(`${API_URL}/mfa/${deviceId}`, {
-    method: 'DELETE',
+export const signOut = () => {
+  const cognitoUser = getCurrentUser();
+  if (cognitoUser) {
+    cognitoUser.signOut();
+  }
+};
+
+export const globalSignOut = async () => {
+  return new Promise((resolve, reject) => {
+    const cognitoUser = getCurrentUser();
+    if (!cognitoUser) {
+      resolve();
+      return;
+    }
+
+    cognitoUser.globalSignOut({
+      onSuccess: () => {
+        resolve();
+      },
+      onFailure: (err) => {
+        reject(err);
+      }
+    });
   });
-  return response.json();
+};
+
+export const setupMFA = async (username) => {
+  return new Promise((resolve, reject) => {
+    const cognitoUser = new CognitoUser({
+      Username: username,
+      Pool: userPool
+    });
+
+    cognitoUser.associateSoftwareToken({
+      onSuccess: (result) => {
+        resolve(result);
+      },
+      onFailure: (err) => {
+        reject(err);
+      },
+      associateSecretCode: (secretCode) => {
+        resolve({ secretCode });
+      }
+    });
+  });
+};
+
+export const verifyMFASetup = async (username, totpCode) => {
+  return new Promise((resolve, reject) => {
+    const cognitoUser = new CognitoUser({
+      Username: username,
+      Pool: userPool
+    });
+
+    cognitoUser.verifySoftwareToken(totpCode, 'TOTP Device', {
+      onSuccess: (result) => {
+        resolve(result);
+      },
+      onFailure: (err) => {
+        reject(err);
+      }
+    });
+  });
+};
+
+export const getMFAOptions = async (username) => {
+  return new Promise((resolve, reject) => {
+    const cognitoUser = new CognitoUser({
+      Username: username,
+      Pool: userPool
+    });
+
+    cognitoUser.getMFAOptions((err, mfaOptions) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve(mfaOptions);
+      }
+    });
+  });
+};
+
+export const setMFAPreference = async (username, totpEnabled = true) => {
+  return new Promise((resolve, reject) => {
+    const cognitoUser = new CognitoUser({
+      Username: username,
+      Pool: userPool
+    });
+
+    const mfaSettings = {
+      SMSMfaSettings: {
+        Enabled: false,
+        PreferredMfa: false
+      },
+      SoftwareTokenMfaSettings: {
+        Enabled: totpEnabled,
+        PreferredMfa: totpEnabled
+      }
+    };
+
+    cognitoUser.setUserMfaPreference(mfaSettings, (err, result) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve(result);
+      }
+    });
+  });
 };

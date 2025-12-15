@@ -100,17 +100,17 @@ export default function Home() {
     const app = appConfig[appKey as keyof typeof appConfig];
     if (!app) return false;
 
-    // Check if user is from ADFS
+    // First check: Is user from ADFS or Cognito?
     const isAdfsUser = auth.user?.profile['cognito:groups']?.some((group: string) => 
-      group.includes('ms-adfs')
+      group.includes('ap-southeast-1_gYsQnwNf1_ms-adfs')
     );
 
     if (isAdfsUser) {
-      // For ADFS users, grant access if they have the ADFS provider group
-      // This simulates having the required ADFS groups
+      // User is from ADFS - check if they have required ADFS groups
+      // For now, simulate by checking if app has adfsGroups defined
       return app.adfsGroups.length > 0;
     } else {
-      // For Cognito users, check specific required groups
+      // User is from Cognito pool - check requiredGroups
       return app.requiredGroups.some(group => 
         auth.user?.profile['cognito:groups']?.includes(group)
       );

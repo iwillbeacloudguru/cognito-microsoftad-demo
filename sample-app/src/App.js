@@ -45,7 +45,7 @@ function App() {
       setIsLoading(true);
       try {
         // Exchange authorization code for tokens
-        const cognitoDomain = 'https://ap-southeast-1gysqnwnf1.auth.ap-southeast-1.amazoncognito.com';
+        const cognitoDomain = process.env.REACT_APP_COGNITO_DOMAIN;
         const clientId = process.env.REACT_APP_COGNITO_CLIENT_ID;
         const redirectUri = window.location.origin;
         
@@ -414,7 +414,7 @@ function App() {
   };
 
   const handleADFSLogin = () => {
-    const cognitoDomain = 'https://ap-southeast-1gysqnwnf1.auth.ap-southeast-1.amazoncognito.com';
+    const cognitoDomain = process.env.REACT_APP_COGNITO_DOMAIN;
     const clientId = process.env.REACT_APP_COGNITO_CLIENT_ID;
     const redirectUri = encodeURIComponent(window.location.origin);
     const adfsLoginUrl = `${cognitoDomain}/oauth2/authorize?identity_provider=ADFS&redirect_uri=${redirectUri}&response_type=CODE&client_id=${clientId}&scope=email+openid+aws.cognito.signin.user.admin`;

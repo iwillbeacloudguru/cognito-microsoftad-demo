@@ -44,12 +44,9 @@ function App() {
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     console.log('[DEBUG] App mounted, URL params:', Object.fromEntries(urlParams));
-    if (!urlParams.has('code') && !urlParams.has('state')) {
-      console.log('[DEBUG] Clearing mfa_verified flag');
-      sessionStorage.removeItem('mfa_verified');
-    } else {
-      console.log('[DEBUG] OAuth callback detected, keeping mfa_verified flag');
-    }
+    // Always clear MFA verification flag to force MFA after ADFS authentication
+    console.log('[DEBUG] Clearing mfa_verified flag');
+    sessionStorage.removeItem('mfa_verified');
   }, []);
 
   useEffect(() => {
@@ -326,7 +323,13 @@ function App() {
   };
 
   const signOutRedirect = async () => {
-    console.log('[DEBUG] Sign out initiated - no MFA required');
+    console.log('[DEBUG] Sign out initiated - closing MFA modals');
+    
+    // Close any open MFA modals
+    setShowTotpVerify(false);
+    setShowTotpSetup(false);
+    setShowMfaSettings(false);
+    
     await clearAllCaches();
     console.log('[DEBUG] All caches cleared, removing OIDC user');
     await auth.removeUser();

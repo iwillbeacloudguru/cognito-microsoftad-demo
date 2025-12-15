@@ -247,8 +247,8 @@ export default function Home() {
                               <button 
                                 onClick={() => {
                                   if (appKey === 'hr-system') {
-                                    const token = auth.user?.access_token;
-                                    window.open(`https://hr.nttdata-cs.com/?token=${token}`, '_blank');
+                                    const token = auth.user?.id_token;
+                                    window.open(`https://hr.nttdata-cs.com?token=${token}`, '_blank');
                                   }
                                 }}
                                 className="bg-white text-blue-600 px-4 py-2 rounded-md font-medium hover:bg-blue-50 transition duration-200"

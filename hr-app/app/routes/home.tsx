@@ -24,6 +24,7 @@ export default function Home() {
       // Decode JWT token to get user profile
       try {
         const payload = JSON.parse(atob(token.split('.')[1]));
+        console.log('Decoded token payload:', payload);
         setUserProfile(payload);
       } catch (error) {
         console.error('Error decoding token:', error);
@@ -34,25 +35,32 @@ export default function Home() {
   // Function to check if user has HR access
   const hasHRAccess = () => {
     const profile = userProfile || auth.user?.profile;
+    console.log('HR Access Check - Profile:', profile);
     if (!profile) return false;
 
     // Check if user is from ADFS
     const isAdfsUser = profile['cognito:groups']?.some((group: string) => 
       group.includes('ap-southeast-1_gYsQnwNf1_ms-adfs')
     );
+    console.log('Is ADFS User:', isAdfsUser);
 
     if (isAdfsUser) {
       // ADFS user - check if they match HR patterns
       const userEmail = profile.email || '';
       const username = profile['cognito:username'] || '';
       const userText = `${userEmail} ${username}`.toLowerCase();
+      console.log('User text for pattern matching:', userText);
       
-      return userText.includes('hr-') || userText.includes('human-resource');
+      const hasHRPattern = userText.includes('hr-') || userText.includes('human-resource');
+      console.log('Has HR pattern:', hasHRPattern);
+      return hasHRPattern;
     } else {
       // Cognito user - check for HR groups
-      return profile['cognito:groups']?.some((group: string) => 
+      const hasHRGroup = profile['cognito:groups']?.some((group: string) => 
         ['hr-users', 'admin-group'].includes(group)
       );
+      console.log('Has HR group:', hasHRGroup);
+      return hasHRGroup;
     }
   };
 
@@ -76,22 +84,9 @@ export default function Home() {
   }
 
   if (!auth.isAuthenticated && !tokenFromUrl) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-red-50 to-red-100 flex items-center justify-center">
-        <div className="bg-white p-8 rounded-lg shadow-lg max-w-md w-full mx-4">
-          <div className="text-center">
-            <h3 className="text-lg font-medium text-red-900 mb-2">Access Required</h3>
-            <p className="text-red-600 mb-4">Please sign in to access the HR Management System.</p>
-            <button 
-              onClick={() => auth.signinRedirect()}
-              className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition duration-200"
-            >
-              Sign In
-            </button>
-          </div>
-        </div>
-      </div>
-    );
+    // Redirect to main app for authentication
+    window.location.href = 'https://demo.nttdata-cs.com';
+    return null;
   }
 
   if (!hasHRAccess()) {

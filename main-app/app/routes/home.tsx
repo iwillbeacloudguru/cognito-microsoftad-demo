@@ -75,6 +75,60 @@ export default function Home() {
     );
   }
 
+  // Application-Group mapping configuration
+  const appConfig = {
+    "nttdata-portal": {
+      "name": "NTTDATA-CS Portal",
+      "description": "Access your corporate applications and resources",
+      "gradient": "from-blue-500 to-blue-700",
+      "requiredGroups": ["portal-users", "admin-group"],
+      "adfsGroups": ["Domain Users", "Internal Application Users"],
+      "adfsProvider": "ms-adfs"
+    },
+    "admin-panel": {
+      "name": "Admin Panel",
+      "description": "System administration and user management",
+      "gradient": "from-blue-600 to-blue-800",
+      "requiredGroups": ["admin", "admin-group"],
+      "adfsGroups": [],
+      "adfsProvider": null
+    },
+    "hr-system": {
+      "name": "HR Management",
+      "description": "Employee records and HR processes",
+      "gradient": "from-green-500 to-green-700",
+      "requiredGroups": ["hr-users"],
+      "adfsGroups": ["HR Department"],
+      "adfsProvider": "ms-adfs"
+    }
+  };
+
+  // Function to check if user has access to an application
+  const hasAccess = (appKey: string) => {
+    const app = appConfig[appKey as keyof typeof appConfig];
+    if (!app) return false;
+
+    // Check Cognito groups
+    const hasRequiredGroup = app.requiredGroups.some(group => 
+      auth.user?.profile['cognito:groups']?.includes(group)
+    );
+
+    // Check ADFS provider access
+    const hasAdfsAccess = app.adfsProvider && 
+      auth.user?.profile['cognito:groups']?.some((group: string) => 
+        group.includes(app.adfsProvider!)
+      );
+
+    // Check specific ADFS groups (if custom:adfs_groups is available)
+    const hasAdfsGroups = app.adfsGroups.length > 0 && 
+      auth.user?.profile['custom:adfs_groups'] && 
+      app.adfsGroups.some(adfsGroup => 
+        auth.user?.profile['custom:adfs_groups']?.includes(adfsGroup)
+      );
+
+    return hasRequiredGroup || hasAdfsAccess || hasAdfsGroups;
+  };
+
   if (auth.isAuthenticated) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100">
@@ -121,7 +175,7 @@ export default function Home() {
                             {/* ADFS Groups */}
                             {(() => {
                               const adfsGroups = auth.user?.profile['custom:adfs_groups'];
-                              console.log('ADFS Groups for display:', adfsGroups);
+                              // console.log('ADFS Groups for display:', adfsGroups);
                               if (!adfsGroups) return null;
                               
                               // Handle both string and array formats
@@ -144,17 +198,17 @@ export default function Home() {
                           </div>
                           {/* Debug: Show all profile attributes */}
                           {(() => {
-                            console.log('Full User Profile:', auth.user?.profile);
-                            console.log('All Profile Keys:', Object.keys(auth.user?.profile || {}));
+                            // console.log('Full User Profile:', auth.user?.profile);
+                            // console.log('All Profile Keys:', Object.keys(auth.user?.profile || {}));
                             
                             const adfsGroups = auth.user?.profile['custom:adfs_groups'];
-                            console.log('custom:adfs_groups:', adfsGroups);
+                            // console.log('custom:adfs_groups:', adfsGroups);
                             
                             // Check for other possible group attributes
                             const possibleGroupKeys = Object.keys(auth.user?.profile || {}).filter(key => 
                               key.toLowerCase().includes('group') || key.toLowerCase().includes('adfs')
                             );
-                            console.log('Possible group keys:', possibleGroupKeys);
+                            // console.log('Possible group keys:', possibleGroupKeys);
                             
                             return (
                               <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs">
@@ -172,58 +226,38 @@ export default function Home() {
                 <div className="mb-6">
                   <h2 className="text-lg font-semibold text-gray-900 mb-4">Available Applications</h2>
                   <div className="grid gap-4">
-                    {/* NTTDATA-CS Portal - requires 'portal-users' group or 'admin-group' or ADFS groups */}
-                    {(auth.user?.profile['cognito:groups']?.includes('portal-users') || 
-                      auth.user?.profile['cognito:groups']?.includes('admin-group') ||
-                      auth.user?.profile['cognito:groups']?.some((group: string) => group.includes('ms-adfs'))) ? (
-                      <div className="bg-gradient-to-r from-blue-500 to-blue-700 rounded-lg p-6 text-white">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <h3 className="text-xl font-bold mb-2">NTTDATA-CS Portal</h3>
-                            <p className="text-blue-100 mb-4">Access your corporate applications and resources</p>
-                            <button className="bg-white text-blue-600 px-4 py-2 rounded-md font-medium hover:bg-blue-50 transition duration-200">
-                              Launch Portal
-                            </button>
+                    {Object.entries(appConfig).map(([appKey, app]) => {
+                      const userHasAccess = hasAccess(appKey);
+                      
+                      return userHasAccess ? (
+                        <div key={appKey} className={`bg-gradient-to-r ${app.gradient} rounded-lg p-6 text-white`}>
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <h3 className="text-xl font-bold mb-2">{app.name}</h3>
+                              <p className="text-blue-100 mb-4">{app.description}</p>
+                              <button className="bg-white text-blue-600 px-4 py-2 rounded-md font-medium hover:bg-blue-50 transition duration-200">
+                                Launch {app.name.split(' ')[0]}
+                              </button>
+                            </div>
+                            <div className="h-16 w-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                              <svg className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9v-9m0-9v9" />
+                              </svg>
+                            </div>
                           </div>
-                          <div className="h-16 w-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
-                            <svg className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9v-9m0-9v9" />
+                        </div>
+                      ) : (
+                        <div key={appKey} className="bg-gray-100 rounded-lg p-6 border-2 border-dashed border-gray-300">
+                          <div className="text-center text-gray-500">
+                            <svg className="h-12 w-12 mx-auto mb-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                             </svg>
+                            <h3 className="text-lg font-medium mb-2">{app.name}</h3>
+                            <p className="text-sm">Access restricted - requires: {app.requiredGroups.join(', ')}</p>
                           </div>
                         </div>
-                      </div>
-                    ) : (
-                      <div className="bg-gray-100 rounded-lg p-6 border-2 border-dashed border-gray-300">
-                        <div className="text-center text-gray-500">
-                          <svg className="h-12 w-12 mx-auto mb-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                          </svg>
-                          <h3 className="text-lg font-medium mb-2">NTTDATA-CS Portal</h3>
-                          <p className="text-sm">Access restricted - requires 'portal-users' or 'admin-group'</p>
-                        </div>
-                      </div>
-                    )}
-                    
-                    {/* Admin Panel - requires 'admin' or 'admin-group' */}
-                    {(auth.user?.profile['cognito:groups']?.includes('admin') || auth.user?.profile['cognito:groups']?.includes('admin-group')) && (
-                      <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-lg p-6 text-white">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <h3 className="text-xl font-bold mb-2">Admin Panel</h3>
-                            <p className="text-blue-100 mb-4">System administration and user management</p>
-                            <button className="bg-white text-blue-600 px-4 py-2 rounded-md font-medium hover:bg-blue-50 transition duration-200">
-                              Launch Admin
-                            </button>
-                          </div>
-                          <div className="h-16 w-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
-                            <svg className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                            </svg>
-                          </div>
-                        </div>
-                      </div>
-                    )}
+                      );
+                    })}
                   </div>
                 </div>
 

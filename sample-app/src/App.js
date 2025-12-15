@@ -287,44 +287,7 @@ function App() {
     });
   };
   
-  const clearAllCaches = async () => {
-    console.log('[DEBUG] Clearing all browser caches');
-    
-    // Clear storage
-    localStorage.clear();
-    sessionStorage.clear();
-    
-    // Clear IndexedDB
-    if ('indexedDB' in window) {
-      try {
-        const databases = await indexedDB.databases();
-        await Promise.all(databases.map(db => {
-          return new Promise((resolve) => {
-            const deleteReq = indexedDB.deleteDatabase(db.name);
-            deleteReq.onsuccess = () => resolve();
-            deleteReq.onerror = () => resolve();
-          });
-        }));
-      } catch (e) {}
-    }
-    
-    // Clear Service Worker caches
-    if ('caches' in window) {
-      try {
-        const cacheNames = await caches.keys();
-        await Promise.all(cacheNames.map(name => caches.delete(name)));
-      } catch (e) {}
-    }
-    
-    // Clear cookies for current domain
-    document.cookie.split(";").forEach(cookie => {
-      const eqPos = cookie.indexOf("=");
-      const name = eqPos > -1 ? cookie.substr(0, eqPos) : cookie;
-      document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
-      document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=${window.location.hostname}`;
-      document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=.${window.location.hostname}`;
-    });
-  };
+
 
   const signOutRedirect = async () => {
     console.log('[DEBUG] Sign out initiated - closing MFA modals');
@@ -334,8 +297,7 @@ function App() {
     setShowTotpSetup(false);
     setShowMfaSettings(false);
     
-    await clearAllCaches();
-    console.log('[DEBUG] All caches cleared, removing OIDC user');
+    console.log('[DEBUG] Removing OIDC user');
     await auth.removeUser();
     
     // First logout from ADFS

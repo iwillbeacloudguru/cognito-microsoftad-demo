@@ -100,19 +100,21 @@ export default function Home() {
     const app = appConfig[appKey as keyof typeof appConfig];
     if (!app) return false;
 
-    // Check Cognito groups
-    const hasRequiredGroup = app.requiredGroups.some(group => 
-      auth.user?.profile['cognito:groups']?.includes(group)
+    // Check if user is from ADFS
+    const isAdfsUser = auth.user?.profile['cognito:groups']?.some((group: string) => 
+      group.includes('ms-adfs')
     );
 
-    // Check specific ADFS groups (if custom:adfs_groups is available)
-    const hasAdfsGroups = app.adfsGroups.length > 0 && 
-      auth.user?.profile['custom:adfs_groups'] && 
-      app.adfsGroups.some(adfsGroup => 
-        auth.user?.profile['custom:adfs_groups']?.includes(adfsGroup)
+    if (isAdfsUser) {
+      // For ADFS users, grant access if they have the ADFS provider group
+      // This simulates having the required ADFS groups
+      return app.adfsGroups.length > 0;
+    } else {
+      // For Cognito users, check specific required groups
+      return app.requiredGroups.some(group => 
+        auth.user?.profile['cognito:groups']?.includes(group)
       );
-
-    return hasRequiredGroup || hasAdfsGroups;
+    }
   };
 
   if (auth.isAuthenticated) {

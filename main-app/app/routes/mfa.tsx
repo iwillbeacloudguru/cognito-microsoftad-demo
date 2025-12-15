@@ -16,6 +16,7 @@ export default function MFA() {
   const auth = useAuth();
   const [mfaSetup, setMfaSetup] = useState({ show: false, qrCode: '', secret: '', verificationCode: '' });
   const [mfaEnabled, setMfaEnabled] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const checkMfaStatus = async () => {
@@ -38,7 +39,11 @@ export default function MFA() {
           }
         } catch (error) {
           console.error('Error checking MFA status:', error);
+        } finally {
+          setLoading(false);
         }
+      } else {
+        setLoading(false);
       }
     };
     
@@ -115,7 +120,16 @@ export default function MFA() {
               <h1 className="text-2xl font-bold text-gray-900">Multi-Factor Authentication</h1>
             </div>
             
-            {!mfaEnabled && !mfaSetup.show && (
+            {loading && (
+              <div className="animate-pulse">
+                <div className="h-4 bg-gray-200 rounded w-3/4 mb-4"></div>
+                <div className="h-4 bg-gray-200 rounded w-1/2 mb-6"></div>
+                <div className="h-32 bg-gray-200 rounded mb-4"></div>
+                <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+              </div>
+            )}
+            
+            {!loading && !mfaEnabled && !mfaSetup.show && (
               <div className="text-center">
                 <div className="mb-6">
                   <svg className="h-16 w-16 mx-auto text-yellow-500 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -181,7 +195,7 @@ export default function MFA() {
               </div>
             )}
 
-            {mfaEnabled && (
+            {!loading && mfaEnabled && (
               <div>
                 <div className={`${theme.alert.success} mb-6`}>
                   <div className="flex items-center space-x-3">

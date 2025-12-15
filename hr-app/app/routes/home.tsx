@@ -87,10 +87,21 @@ export default function Home() {
 
   if (auth.isLoading) {
     return (
-      <div className="min-h-screen bg-red-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
+      <div className={theme.layout.pageRed}>
+        <div className="animate-pulse">
+          <div className="bg-red-600 h-16 mb-8"></div>
+          <div className={theme.layout.container}>
+            <div className="max-w-6xl mx-auto">
+              <div className={theme.card}>
+                <div className="h-6 bg-gray-200 rounded w-1/4 mb-4"></div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div className="h-40 bg-gray-200 rounded"></div>
+                  <div className="h-40 bg-gray-200 rounded"></div>
+                  <div className="h-40 bg-gray-200 rounded"></div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     );

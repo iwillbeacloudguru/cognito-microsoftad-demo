@@ -1,5 +1,5 @@
 import { useAuth } from "react-oidc-context";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { CognitoIdentityProviderClient, AssociateSoftwareTokenCommand, VerifySoftwareTokenCommand, SetUserMFAPreferenceCommand } from "@aws-sdk/client-cognito-identity-provider";
 import Navbar from "../components/Navbar";
 import { theme } from "../styles/theme";
@@ -16,6 +16,12 @@ export default function MFA() {
   const auth = useAuth();
   const [mfaSetup, setMfaSetup] = useState({ show: false, qrCode: '', secret: '', verificationCode: '' });
   const [mfaEnabled, setMfaEnabled] = useState(false);
+
+  useEffect(() => {
+    if (auth.isAuthenticated && auth.user?.profile.phone_number_verified) {
+      setMfaEnabled(true);
+    }
+  }, [auth.isAuthenticated]);
 
   const setupMFA = async () => {
     console.log('Starting MFA setup...');
@@ -154,13 +160,51 @@ export default function MFA() {
             )}
 
             {mfaEnabled && (
-              <div className="text-center">
-                <div className="mb-6">
-                  <svg className="h-16 w-16 mx-auto text-green-500 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <h2 className="text-xl font-semibold text-green-800 mb-2">MFA is Active</h2>
-                  <p className="text-green-700">Your account is protected with TOTP authentication</p>
+              <div>
+                <div className={`${theme.alert.success} mb-6`}>
+                  <div className="flex items-center space-x-3">
+                    <svg className="h-8 w-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <div>
+                      <h2 className="text-lg font-semibold text-green-800">MFA is Active</h2>
+                      <p className="text-green-700">Your account is protected with TOTP authentication</p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-gray-900">MFA Details</h3>
+                  
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm font-medium text-gray-700">Method</p>
+                        <p className="text-sm text-gray-600">TOTP (Time-based One-Time Password)</p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-700">Status</p>
+                        <p className="text-sm text-green-600">Enabled & Active</p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-700">Account</p>
+                        <p className="text-sm text-gray-600">{auth.user?.profile.email}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-700">Issuer</p>
+                        <p className="text-sm text-gray-600">CognitoDemo</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="bg-blue-50 rounded-lg p-4">
+                    <h4 className="text-sm font-medium text-blue-800 mb-2">Security Information</h4>
+                    <ul className="text-sm text-blue-700 space-y-1">
+                      <li>• Your account requires MFA for all sign-ins</li>
+                      <li>• TOTP codes refresh every 30 seconds</li>
+                      <li>• Use your authenticator app to generate codes</li>
+                    </ul>
+                  </div>
                 </div>
               </div>
             )}

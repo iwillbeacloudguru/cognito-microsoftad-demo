@@ -119,14 +119,24 @@ export default function Home() {
                               </span>
                             ))}
                             {/* ADFS Groups */}
-                            {auth.user?.profile['custom:adfs_groups']?.map((group: string) => {
-                              const decodedGroup = decodeURIComponent(group).replace(/.*\\/, '');
-                              return (
-                                <span key={group} className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
-                                  {decodedGroup}
-                                </span>
-                              );
-                            })}
+                            {(() => {
+                              const adfsGroups = auth.user?.profile['custom:adfs_groups'];
+                              if (!adfsGroups) return null;
+                              
+                              // Handle both string and array formats
+                              const groupsArray = typeof adfsGroups === 'string' 
+                                ? adfsGroups.split(',').map(g => g.trim())
+                                : adfsGroups;
+                              
+                              return groupsArray.map((group: string) => {
+                                const decodedGroup = decodeURIComponent(group).replace(/.*\\/, '');
+                                return (
+                                  <span key={group} className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
+                                    {decodedGroup}
+                                  </span>
+                                );
+                              });
+                            })()}
                             {(!auth.user?.profile['cognito:groups'] && !auth.user?.profile['custom:adfs_groups']) && 
                               <span className="text-xs text-gray-400">No groups assigned</span>
                             }
@@ -143,10 +153,19 @@ export default function Home() {
                     {/* NTTDATA-CS Portal - requires 'portal-users' group or 'admin-group' or ADFS groups */}
                     {(auth.user?.profile['cognito:groups']?.includes('portal-users') || 
                       auth.user?.profile['cognito:groups']?.includes('admin-group') ||
-                      auth.user?.profile['custom:adfs_groups']?.some((group: string) => 
-                        decodeURIComponent(group).includes('Internal Application Users') || 
-                        decodeURIComponent(group).includes('Domain Users')
-                      )) ? (
+                      (() => {
+                        const adfsGroups = auth.user?.profile['custom:adfs_groups'];
+                        if (!adfsGroups) return false;
+                        
+                        const groupsArray = typeof adfsGroups === 'string' 
+                          ? adfsGroups.split(',').map(g => g.trim())
+                          : adfsGroups;
+                        
+                        return groupsArray.some((group: string) => 
+                          decodeURIComponent(group).includes('Internal Application Users') || 
+                          decodeURIComponent(group).includes('Domain Users')
+                        );
+                      })()) ? (
                       <div className="bg-gradient-to-r from-blue-500 to-blue-700 rounded-lg p-6 text-white">
                         <div className="flex items-center justify-between">
                           <div>

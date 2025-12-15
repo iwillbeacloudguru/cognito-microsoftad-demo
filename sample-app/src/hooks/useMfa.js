@@ -8,19 +8,24 @@ export const useMfa = (user) => {
   const loadMfaOptions = async () => {
     if (!user) return;
     
-    // Skip MFA options loading for federated users
-    if (user.isFederated) {
-      setMfaOptions([]);
-      return;
-    }
-    
     const username = typeof user === 'string' ? user : user.getUsername();
     if (!username) return;
     
     setLoading(true);
     try {
-      const options = await getMFAOptions(username);
-      setMfaOptions(options || []);
+      if (user.isFederated) {
+        // Check backend for federated user MFA
+        const response = await fetch(`${process.env.REACT_APP_API_URL}/mfa/${encodeURIComponent(username)}`);
+        if (response.ok) {
+          const data = await response.json();
+          setMfaOptions(data.devices || []);
+        } else {
+          setMfaOptions([]);
+        }
+      } else {
+        const options = await getMFAOptions(username);
+        setMfaOptions(options || []);
+      }
     } catch (error) {
       console.error('Failed to load MFA options:', error);
       setMfaOptions([]);
@@ -29,10 +34,12 @@ export const useMfa = (user) => {
     }
   };
 
-  const hasTotpDevice = mfaOptions.some(option => 
-    option.DeliveryMedium === 'SOFTWARE_TOKEN_MFA' || 
-    option.AttributeName === 'SOFTWARE_TOKEN_MFA'
-  );
+  const hasTotpDevice = user?.isFederated 
+    ? mfaOptions.some(option => option.device_type === 'totp' && option.is_active)
+    : mfaOptions.some(option => 
+        option.DeliveryMedium === 'SOFTWARE_TOKEN_MFA' || 
+        option.AttributeName === 'SOFTWARE_TOKEN_MFA'
+      );
 
   useEffect(() => {
     loadMfaOptions();

@@ -136,6 +136,15 @@ function App() {
 
 
   const setupTotp = async () => {
+    // For federated users, use application-level MFA
+    if (user?.isFederated) {
+      // Generate TOTP secret for federated user
+      const secret = generateTotpSecret();
+      setTotpSecret(secret);
+      setShowTotpSetup(true);
+      return;
+    }
+
     try {
       const result = await setupMFA(user?.getUsername());
       setTotpSecret(result.secretCode);
@@ -144,6 +153,15 @@ function App() {
       console.error('Failed to setup MFA:', error);
       alert('Failed to setup MFA. Please try again.');
     }
+  };
+
+  const generateTotpSecret = () => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+    let secret = '';
+    for (let i = 0; i < 32; i++) {
+      secret += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return secret;
   };
 
 
@@ -155,8 +173,25 @@ function App() {
     }
 
     try {
-      await verifyMFASetup(user?.getUsername(), totpCode);
-      await setMFAPreference(user?.getUsername(), true);
+      if (user?.isFederated) {
+        // For federated users, store MFA in backend
+        const response = await fetch(`${process.env.REACT_APP_API_URL}/mfa`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user_email: user.getUsername(),
+            device_type: 'totp',
+            totp_secret: totpSecret,
+            verification_code: totpCode
+          })
+        });
+        
+        if (!response.ok) throw new Error('Verification failed');
+      } else {
+        await verifyMFASetup(user?.getUsername(), totpCode);
+        await setMFAPreference(user?.getUsername(), true);
+      }
+      
       setShowTotpSetup(false);
       setTotpCode('');
       loadMfaOptions();

@@ -1,4 +1,5 @@
 import { useAuth } from "react-oidc-context";
+import { useEffect } from "react";
 import type { Route } from "./+types/home";
 
 export function meta({}: Route.MetaArgs) {
@@ -11,6 +12,14 @@ export function meta({}: Route.MetaArgs) {
 export default function Home() {
   const auth = useAuth();
 
+  useEffect(() => {
+    // Clear URL params if auth error with state mismatch
+    if (auth.error && auth.error.message.includes("No matching state found")) {
+      window.history.replaceState({}, document.title, window.location.pathname);
+      auth.clearStaleState();
+    }
+  }, [auth.error]);
+
   const signOutRedirect = () => {
     const adfsServer = "https://adfs.nttdata-cs.com";
     const returnUrl = "https://demo.nttdata-cs.com";
@@ -22,6 +31,14 @@ export default function Home() {
   }
 
   if (auth.error) {
+    if (auth.error.message.includes("No matching state found")) {
+      return (
+        <div>
+          <p>Session expired. Please sign in again.</p>
+          <button onClick={() => auth.signinRedirect()}>Sign in</button>
+        </div>
+      );
+    }
     return <div>Encountering error... {auth.error.message}</div>;
   }
 

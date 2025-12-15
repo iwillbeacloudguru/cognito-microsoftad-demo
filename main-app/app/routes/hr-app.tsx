@@ -110,7 +110,7 @@ export default function HRApp() {
                 </div>
                 <button 
                   onClick={() => navigate('/')}
-                  className="bg-white bg-opacity-20 text-blue px-4 py-2 rounded-md hover:bg-opacity-30 transition duration-200"
+                  className="bg-white bg-opacity-20 text-blue-600 px-4 py-2 rounded-md hover:bg-opacity-30 transition duration-200"
                 >
                   Back to Home
                 </button>

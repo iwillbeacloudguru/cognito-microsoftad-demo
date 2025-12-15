@@ -6,6 +6,7 @@ import { useAuth } from "react-oidc-context";
 import { useEffect, useState } from "react";
 import type { Route } from "./+types/home";
 import { CognitoIdentityProviderClient, AssociateSoftwareTokenCommand, VerifySoftwareTokenCommand, SetUserMFAPreferenceCommand } from "@aws-sdk/client-cognito-identity-provider";
+import Navbar from "../components/Navbar";
 
 // Meta information for the page
 export function meta({}: Route.MetaArgs) {
@@ -143,7 +144,7 @@ export default function Home() {
     "hr-system": {
       "name": "HR Management",
       "description": "Employee records and HR processes",
-      "color": "bg-blue-800",
+      "color": "bg-red-600",
       "cognitoGroups": ["hr-users", "admin-group"],
       "adfsUserPatterns": ["hr-", "human-resource"],
       "adfsGroups": ["HR Department", "Human Resources"]
@@ -285,21 +286,17 @@ export default function Home() {
   if (auth.isAuthenticated) {
     return (
       <div className="min-h-screen bg-blue-50">
+        <Navbar 
+          mfaEnabled={mfaEnabled}
+          showMfaManage={showMfaManage}
+          setShowMfaManage={setShowMfaManage}
+          showTokens={showTokens}
+          setShowTokens={setShowTokens}
+          onSignOut={signOutRedirect}
+        />
         <div className="container mx-auto px-4 py-8">
           <div className="max-w-4xl mx-auto">
             <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-              <div className="bg-blue-600 px-6 py-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h1 className="text-2xl font-bold text-white">Welcome!</h1>
-                    <p className="text-blue-100">Successfully authenticated with Microsoft AD</p>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <div className="h-3 w-3 bg-blue-400 rounded-full animate-pulse"></div>
-                    <span className="text-blue-100 text-sm">Connected</span>
-                  </div>
-                </div>
-              </div>
               
               <div className="p-6">
                 {needsMfaSetup && (
@@ -548,17 +545,7 @@ export default function Home() {
                   )}
                 </div>
 
-                <div className="flex justify-end">
-                  <button 
-                    onClick={() => signOutRedirect()}
-                    className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition duration-200 flex items-center space-x-2"
-                  >
-                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                    </svg>
-                    <span>Sign Out</span>
-                  </button>
-                </div>
+
               </div>
             </div>
           </div>

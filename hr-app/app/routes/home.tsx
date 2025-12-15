@@ -1,6 +1,7 @@
 import { useAuth } from "react-oidc-context";
 import { useEffect, useState } from "react";
 import type { Route } from "./+types/home";
+import Navbar from "../components/Navbar";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -85,7 +86,7 @@ export default function Home() {
 
   if (auth.isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center">
+      <div className="min-h-screen bg-red-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Loading...</p>
@@ -102,7 +103,7 @@ export default function Home() {
 
   if (!hasHRAccess()) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-red-50 to-red-100 flex items-center justify-center">
+      <div className="min-h-screen bg-red-50 flex items-center justify-center">
         <div className="bg-white p-8 rounded-lg shadow-lg max-w-md w-full mx-4">
           <div className="text-center">
             <svg className="h-16 w-16 mx-auto mb-4 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -112,7 +113,7 @@ export default function Home() {
             <p className="text-red-600 mb-4">You don't have permission to access the HR Management System.</p>
             <button 
               onClick={() => window.location.href = 'https://demo.nttdata-cs.com'}
-              className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition duration-200"
+              className="w-full bg-red-600 text-white py-2 px-4 rounded-md hover:bg-red-700 transition duration-200"
             >
               Back to Main Portal
             </button>
@@ -123,24 +124,14 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100">
+    <div className="min-h-screen bg-red-50">
+      <Navbar 
+        userEmail={(userProfile || auth.user?.profile)?.email}
+        onSignOut={signOutRedirect}
+      />
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-6xl mx-auto">
           <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-            <div className="bg-gradient-to-r from-blue-600 to-blue-800 px-6 py-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h1 className="text-2xl font-bold text-white">HR Management System</h1>
-                  <p className="text-blue-100">Employee records and HR processes</p>
-                </div>
-                <button 
-                  onClick={() => window.close()}
-                  className="bg-white text-blue-600 px-4 py-2 rounded-md hover:bg-blue-50 transition duration-200"
-                >
-                  Close & Back to Main App
-                </button>
-              </div>
-            </div>
             
             <div className="p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

@@ -12,11 +12,17 @@ import type { Route } from "./+types/root";
 import "./app.css";
 
 const cognitoAuthConfig = {
-  authority: "https://auth.nttdata-cs.com",
+  authority: "https://cognito-idp.ap-southeast-1.amazonaws.com/ap-southeast-1_gYsQnwNf1",
   client_id: "5tai0tc43qpu5fq4l8hukmh9q3",
   redirect_uri: "https://demo.nttdata-cs.com/callback",
   response_type: "code",
   scope: "aws.cognito.signin.user.admin email openid",
+  metadata: {
+    issuer: "https://cognito-idp.ap-southeast-1.amazonaws.com/ap-southeast-1_gYsQnwNf1",
+    authorization_endpoint: "https://auth.nttdata-cs.com/oauth2/authorize",
+    token_endpoint: "https://auth.nttdata-cs.com/oauth2/token",
+    end_session_endpoint: "https://auth.nttdata-cs.com/logout"
+  }
 };
 
 export const links: Route.LinksFunction = () => [

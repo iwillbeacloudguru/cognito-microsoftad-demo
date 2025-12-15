@@ -12,7 +12,7 @@ import type { Route } from "./+types/root";
 import "./app.css";
 
 const cognitoAuthConfig = {
-  authority: "https://cognito-idp.ap-southeast-1.amazonaws.com/ap-southeast-1_gYsQnwNf1",
+  authority: "https://auth.nttdata-cs.com",
   client_id: "5tai0tc43qpu5fq4l8hukmh9q3",
   redirect_uri: "https://demo.nttdata-cs.com/callback",
   response_type: "code",

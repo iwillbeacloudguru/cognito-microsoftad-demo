@@ -21,9 +21,11 @@ export default function Home() {
   }, [auth.error]);
 
   const signOutRedirect = () => {
-    const adfsServer = "https://adfs.nttdata-cs.com";
-    const returnUrl = "https://demo.nttdata-cs.com";
-    window.location.href = `${adfsServer}/adfs/ls/?wa=wsignout1.0&wreply=${encodeURIComponent(returnUrl)}`;
+    auth.removeUser();
+    const cognitoDomain = "https://auth.nttdata-cs.com";
+    const clientId = "5tai0tc43qpu5fq4l8hukmh9q3";
+    const logoutUri = "https://demo.nttdata-cs.com";
+    window.location.href = `${cognitoDomain}/logout?client_id=${clientId}&logout_uri=${encodeURIComponent(logoutUri)}`;
   };
 
   if (auth.isLoading) {
@@ -50,7 +52,7 @@ export default function Home() {
         <pre> Access Token: {auth.user?.access_token} </pre>
         <pre> Refresh Token: {auth.user?.refresh_token} </pre>
 
-        <button onClick={() => auth.removeUser()}>Sign out</button>
+        <button onClick={() => signOutRedirect()}>Sign out</button>
       </div>
     );
   }

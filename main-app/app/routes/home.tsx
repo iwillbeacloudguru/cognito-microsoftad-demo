@@ -22,6 +22,8 @@ export default function Home() {
   const [showTokens, setShowTokens] = useState(false);
   // MFA setup states
   const [mfaSetup, setMfaSetup] = useState({ show: false, qrCode: '', secret: '', verificationCode: '' });
+  const [mfaEnabled, setMfaEnabled] = useState(false);
+  const [showMfaManage, setShowMfaManage] = useState(false);
 
   // Handle stale authentication states
   useEffect(() => {
@@ -80,7 +82,7 @@ export default function Home() {
   // Loading state UI
   if (auth.isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+      <div className="min-h-screen bg-blue-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Loading...</p>
@@ -94,7 +96,7 @@ export default function Home() {
     // Handle expired session error
     if (auth.error.message.includes("No matching state found")) {
       return (
-        <div className="min-h-screen bg-gradient-to-br from-red-50 to-pink-100 flex items-center justify-center">
+        <div className="min-h-screen bg-red-50 flex items-center justify-center">
           <div className="bg-white p-8 rounded-lg shadow-lg max-w-md w-full mx-4">
             <div className="text-center">
               <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
@@ -117,7 +119,7 @@ export default function Home() {
     }
     // Handle other authentication errors
     return (
-      <div className="min-h-screen bg-gradient-to-br from-red-50 to-pink-100 flex items-center justify-center">
+      <div className="min-h-screen bg-red-50 flex items-center justify-center">
         <div className="bg-white p-8 rounded-lg shadow-lg max-w-md w-full mx-4">
           <div className="text-center">
             <h3 className="text-lg font-medium text-red-900 mb-2">Authentication Error</h3>
@@ -134,7 +136,7 @@ export default function Home() {
     "hr-system": {
       "name": "HR Management",
       "description": "Employee records and HR processes",
-      "gradient": "from-blue-800 to-blue-800",
+      "color": "bg-blue-800",
       "cognitoGroups": ["hr-users", "admin-group"],
       "adfsUserPatterns": ["hr-", "human-resource"],
       "adfsGroups": ["HR Department", "Human Resources"]
@@ -143,7 +145,7 @@ export default function Home() {
       "name": "Finance Dashboard",
       "name": "Finance Dashboard", 
       "description": "Financial analytics and reporting",
-      "gradient": "from-blue-800 to-blue-800",
+      "color": "bg-blue-800",
       "cognitoGroups": ["finance-team", "admin-group"],
       "adfsUserPatterns": ["finance-", "accounting-", "application-user"],
       "adfsGroups": ["Finance Department", "Accounting"]
@@ -151,7 +153,7 @@ export default function Home() {
     "it-portal": {
       "name": "IT Portal",
       "description": "System administration and IT support",
-      "gradient": "from-blue-800 to-blue-800",
+      "color": "bg-blue-800",
       "cognitoGroups": ["it-support", "admin-group"],
       "adfsUserPatterns": ["it-", "admin-", "tech-"],
       "adfsGroups": ["IT Department", "System Administrators"]
@@ -204,10 +206,17 @@ export default function Home() {
     }
   };
 
+  // Check MFA status on load
+  useEffect(() => {
+    if (auth.isAuthenticated && auth.user?.profile.phone_number_verified) {
+      setMfaEnabled(true);
+    }
+  }, [auth.isAuthenticated]);
+
   // Check if user needs MFA setup (Cognito users only)
   const needsMfaSetup = auth.isAuthenticated && 
     !auth.user?.profile['cognito:groups']?.some((group: string) => group.includes('ms-adfs')) &&
-    !auth.user?.profile.phone_number_verified;
+    !mfaEnabled;
 
   // MFA Setup Functions
   const setupMFA = async () => {
@@ -264,6 +273,7 @@ export default function Home() {
       console.log('MFA preference response:', preferenceResponse);
       
       setMfaSetup({ show: false, qrCode: '', secret: '', verificationCode: '' });
+      setMfaEnabled(true);
       console.log('MFA setup completed successfully!');
       alert('MFA setup completed successfully!');
     } catch (error) {
@@ -275,11 +285,11 @@ export default function Home() {
   // Render authenticated user interface
   if (auth.isAuthenticated) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100">
+      <div className="min-h-screen bg-blue-50">
         <div className="container mx-auto px-4 py-8">
           <div className="max-w-4xl mx-auto">
             <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-              <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
+              <div className="bg-blue-600 px-6 py-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <h1 className="text-2xl font-bold text-white">Welcome!</h1>
@@ -428,6 +438,36 @@ export default function Home() {
                   </div>
                 </div>
 
+                {mfaEnabled && (
+                  <div className="mb-6">
+                    <div className="flex items-center justify-between mb-3">
+                      <h2 className="text-lg font-semibold text-gray-900">Multi-Factor Authentication</h2>
+                      <button
+                        onClick={() => setShowMfaManage(!showMfaManage)}
+                        className="text-indigo-600 hover:text-indigo-800 text-sm font-medium"
+                      >
+                        {showMfaManage ? 'Hide' : 'Manage'} MFA
+                      </button>
+                    </div>
+                    
+                    {showMfaManage && (
+                      <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                        <div className="flex items-center space-x-3">
+                          <div className="h-8 w-8 bg-green-100 rounded-full flex items-center justify-center">
+                            <svg className="h-5 w-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                          </div>
+                          <div>
+                            <h3 className="text-sm font-medium text-green-800">MFA is Active</h3>
+                            <p className="text-sm text-green-700">Your account is protected with TOTP authentication</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 <div className="mb-6">
                   <h2 className="text-lg font-semibold text-gray-900 mb-4">Available Applications</h2>
                   <div className="grid gap-4">
@@ -435,7 +475,7 @@ export default function Home() {
                       const userHasAccess = hasAccess(appKey);
                       
                       return userHasAccess ? (
-                        <div key={appKey} className={`bg-gradient-to-r ${app.gradient} rounded-lg p-6 text-white`}>
+                        <div key={appKey} className={`${app.color} rounded-lg p-6 text-white`}>
                           <div className="flex items-center justify-between">
                             <div>
                               <h3 className="text-xl font-bold mb-2">{app.name}</h3>
@@ -531,10 +571,10 @@ export default function Home() {
 
   // Render login screen for unauthenticated users
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-blue-100 flex items-center justify-center">
+    <div className="min-h-screen bg-indigo-50 flex items-center justify-center">
       <div className="max-w-md w-full mx-4">
         <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-          <div className="bg-gradient-to-r from-indigo-600 to-blue-600 px-6 py-8">
+          <div className="bg-indigo-600 px-6 py-8">
             <div className="text-center">
               <div className="mx-auto h-16 w-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center mb-4">
                 <svg className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">

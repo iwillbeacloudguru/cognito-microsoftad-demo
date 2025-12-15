@@ -5,6 +5,7 @@
 import { useAuth } from "react-oidc-context";
 import { useEffect, useState } from "react";
 import type { Route } from "./+types/home";
+import { CognitoIdentityProviderClient, AssociateSoftwareTokenCommand, VerifySoftwareTokenCommand, SetUserMFAPreferenceCommand } from "@aws-sdk/client-cognito-identity-provider";
 
 // Meta information for the page
 export function meta({}: Route.MetaArgs) {
@@ -19,6 +20,8 @@ export default function Home() {
   const auth = useAuth();
   // State to control visibility of authentication tokens
   const [showTokens, setShowTokens] = useState(false);
+  // MFA setup states
+  const [mfaSetup, setMfaSetup] = useState({ show: false, qrCode: '', secret: '', verificationCode: '' });
 
   // Handle stale authentication states
   useEffect(() => {
@@ -201,6 +204,74 @@ export default function Home() {
     }
   };
 
+  // Check if user needs MFA setup (Cognito users only)
+  const needsMfaSetup = auth.isAuthenticated && 
+    !auth.user?.profile['cognito:groups']?.some((group: string) => group.includes('ms-adfs')) &&
+    !auth.user?.profile.phone_number_verified;
+
+  // MFA Setup Functions
+  const setupMFA = async () => {
+    console.log('Starting MFA setup...');
+    console.log('Access token available:', !!auth.user?.access_token);
+    try {
+      const client = new CognitoIdentityProviderClient({ region: 'ap-southeast-1' });
+      console.log('Cognito client created');
+      
+      const command = new AssociateSoftwareTokenCommand({
+        AccessToken: auth.user?.access_token
+      });
+      console.log('Sending AssociateSoftwareToken command...');
+      
+      const response = await client.send(command);
+      console.log('MFA setup response:', response);
+      
+      const secret = response.SecretCode;
+      const qrCode = `otpauth://totp/CognitoDemo:${auth.user?.profile.email}?secret=${secret}&issuer=CognitoDemo`;
+      
+      console.log('Generated secret:', secret);
+      console.log('Generated QR code URL:', qrCode);
+      
+      setMfaSetup({ show: true, qrCode, secret: secret || '', verificationCode: '' });
+    } catch (error) {
+      console.error('MFA setup error:', error);
+    }
+  };
+
+  const verifyMFA = async () => {
+    console.log('Starting MFA verification...');
+    console.log('Verification code:', mfaSetup.verificationCode);
+    try {
+      const client = new CognitoIdentityProviderClient({ region: 'ap-southeast-1' });
+      
+      // Verify the TOTP code
+      const verifyCommand = new VerifySoftwareTokenCommand({
+        AccessToken: auth.user?.access_token,
+        UserCode: mfaSetup.verificationCode
+      });
+      console.log('Sending VerifySoftwareToken command...');
+      
+      const verifyResponse = await client.send(verifyCommand);
+      console.log('Verification response:', verifyResponse);
+      
+      // Enable TOTP as preferred MFA
+      const preferenceCommand = new SetUserMFAPreferenceCommand({
+        AccessToken: auth.user?.access_token,
+        SoftwareTokenMfaSettings: { Enabled: true, PreferredMfa: true }
+      });
+      console.log('Setting MFA preference...');
+      
+      const preferenceResponse = await client.send(preferenceCommand);
+      console.log('MFA preference response:', preferenceResponse);
+      
+      setMfaSetup({ show: false, qrCode: '', secret: '', verificationCode: '' });
+      console.log('MFA setup completed successfully!');
+      alert('MFA setup completed successfully!');
+    } catch (error) {
+      console.error('MFA verification error:', error);
+      alert('Invalid verification code. Please try again.');
+    }
+  };
+
   // Render authenticated user interface
   if (auth.isAuthenticated) {
     return (
@@ -222,6 +293,67 @@ export default function Home() {
               </div>
               
               <div className="p-6">
+                {needsMfaSetup && (
+                  <div className="mb-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="text-sm font-medium text-yellow-800">Setup Multi-Factor Authentication</h3>
+                        <p className="text-sm text-yellow-700">Secure your account with TOTP authentication</p>
+                      </div>
+                      <button
+                        onClick={setupMFA}
+                        className="bg-yellow-600 text-white px-3 py-1 rounded text-sm hover:bg-yellow-700"
+                      >
+                        Setup MFA
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {mfaSetup.show && (
+                  <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <h3 className="text-lg font-medium text-blue-900 mb-4">Setup TOTP Authentication</h3>
+                    <div className="space-y-4">
+                      <div>
+                        <p className="text-sm text-blue-700 mb-2">1. Scan this QR code with your authenticator app:</p>
+                        <div className="bg-white p-4 rounded border inline-block">
+                          <img src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(mfaSetup.qrCode)}`} alt="QR Code" />
+                        </div>
+                      </div>
+                      <div>
+                        <p className="text-sm text-blue-700 mb-2">2. Or enter this secret manually:</p>
+                        <code className="bg-gray-100 px-2 py-1 rounded text-sm">{mfaSetup.secret}</code>
+                      </div>
+                      <div>
+                        <p className="text-sm text-blue-700 mb-2">3. Enter the 6-digit code from your app:</p>
+                        <div className="flex space-x-2">
+                          <input
+                            type="text"
+                            value={mfaSetup.verificationCode}
+                            onChange={(e) => setMfaSetup({...mfaSetup, verificationCode: e.target.value})}
+                            placeholder="123456"
+                            className="border rounded px-3 py-2 text-sm w-24"
+                            maxLength={6}
+                          />
+                          <button
+                            onClick={verifyMFA}
+                            disabled={mfaSetup.verificationCode.length !== 6}
+                            className="bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700 disabled:opacity-50"
+                          >
+                            Verify
+                          </button>
+                          <button
+                            onClick={() => setMfaSetup({ show: false, qrCode: '', secret: '', verificationCode: '' })}
+                            className="bg-gray-500 text-white px-4 py-2 rounded text-sm hover:bg-gray-600"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <div className="mb-6">
                   <h2 className="text-lg font-semibold text-gray-900 mb-2">User Information</h2>
                   <div className="bg-gray-50 rounded-lg p-4">

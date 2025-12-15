@@ -326,13 +326,13 @@ function App() {
   };
 
   const signOutRedirect = async () => {
-    console.log('[DEBUG] Sign out initiated');
+    console.log('[DEBUG] Sign out initiated - no MFA required');
     await clearAllCaches();
     console.log('[DEBUG] All caches cleared, removing OIDC user');
     await auth.removeUser();
     
     // First logout from ADFS
-    const adfsLogoutUrl = "https://adfs.nttdata-cs.com/adfs/ls/idpinitiatedsignon.aspx?loginToRp=urn:amazon:cognito:sp:ap-southeast-1_gYsQnwNf1&wa=wsignout1.0";
+    const adfsLogoutUrl = "https://adfs.nttdata-cs.com/adfs/ls/?wa=wsignout1.0&wreply=https://demo.nttdata-cs.com";
     console.log('[DEBUG] Logging out from ADFS first:', adfsLogoutUrl);
     
     // Create hidden iframe to logout from ADFS

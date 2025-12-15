@@ -80,7 +80,7 @@ export default function Home() {
     "hr-system": {
       "name": "HR Management",
       "description": "Employee records and HR processes",
-      "gradient": "from-blue-500 to-blue-700",
+      "gradient": "from-blue-800 to-blue-800",
       "cognitoGroups": ["hr-users", "admin-group"],
       "adfsUserPatterns": ["hr-", "human-resource"],
       "adfsGroups": ["HR Department", "Human Resources"]
@@ -88,7 +88,7 @@ export default function Home() {
     "finance-dashboard": {
       "name": "Finance Dashboard",
       "description": "Financial analytics and reporting",
-      "gradient": "from-blue-600 to-blue-800",
+      "gradient": "from-blue-800 to-blue-800",
       "cognitoGroups": ["finance-team", "admin-group"],
       "adfsUserPatterns": ["finance-", "accounting-", "application-user"],
       "adfsGroups": ["Finance Department", "Accounting"]
@@ -96,7 +96,7 @@ export default function Home() {
     "it-portal": {
       "name": "IT Portal",
       "description": "System administration and IT support",
-      "gradient": "from-blue-400 to-blue-600",
+      "gradient": "from-blue-800 to-blue-800",
       "cognitoGroups": ["it-support", "admin-group"],
       "adfsUserPatterns": ["it-", "admin-", "tech-"],
       "adfsGroups": ["IT Department", "System Administrators"]
@@ -244,7 +244,10 @@ export default function Home() {
                             <div>
                               <h3 className="text-xl font-bold mb-2">{app.name}</h3>
                               <p className="text-blue-100 mb-4">{app.description}</p>
-                              <button className="bg-white text-blue-600 px-4 py-2 rounded-md font-medium hover:bg-blue-50 transition duration-200">
+                              <button 
+                                onClick={() => appKey === 'hr-system' ? window.location.href = '/hr-app' : null}
+                                className="bg-white text-blue-600 px-4 py-2 rounded-md font-medium hover:bg-blue-50 transition duration-200"
+                              >
                                 Launch {app.name.split(' ')[0]}
                               </button>
                             </div>

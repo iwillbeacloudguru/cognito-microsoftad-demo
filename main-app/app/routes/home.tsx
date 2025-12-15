@@ -141,6 +141,13 @@ export default function Home() {
                               <span className="text-xs text-gray-400">No groups assigned</span>
                             }
                           </div>
+                          {/* Debug: Show raw ADFS groups */}
+                          {auth.user?.profile['custom:adfs_groups'] && (
+                            <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs">
+                              <p className="text-yellow-700 font-medium">Debug - Raw ADFS Groups:</p>
+                              <p className="text-yellow-600 break-all">{JSON.stringify(auth.user.profile['custom:adfs_groups'])}</p>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>

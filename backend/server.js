@@ -148,6 +148,13 @@ app.delete('/v2/mfa/:id', async (req, res) => {
   }
 });
 
+// Frontend logs endpoint
+app.post('/api/logs', (req, res) => {
+  const { level, message, timestamp } = req.body;
+  console.log(`[${timestamp}] [${level.toUpperCase()}] ${message}`);
+  res.status(200).send('OK');
+});
+
 app.listen(PORT, () => {
   console.log(`🚀 Backend server running on port ${PORT}`);
   console.log(`📍 API: http://localhost:${PORT}/v2`);

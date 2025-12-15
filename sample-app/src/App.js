@@ -5,6 +5,25 @@ import { QRCodeSVG } from 'qrcode.react';
 import MfaSettings from './MfaSettings';
 import { createUser, registerMfaDevice, getMfaDevices, updateMfaUsed } from './api';
 
+// Override console to send logs to backend
+const originalConsole = { ...console };
+console.log = (...args) => {
+  originalConsole.log(...args);
+  fetch('/api/logs', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ level: 'log', message: args.join(' '), timestamp: new Date().toISOString() })
+  }).catch(() => {});
+};
+console.error = (...args) => {
+  originalConsole.error(...args);
+  fetch('/api/logs', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ level: 'error', message: args.join(' '), timestamp: new Date().toISOString() })
+  }).catch(() => {});
+};
+
 function App() {
   const auth = useAuth();
   const [authStage, setAuthStage] = useState('idle');

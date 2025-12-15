@@ -44,9 +44,13 @@ function App() {
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     console.log('[DEBUG] App mounted, URL params:', Object.fromEntries(urlParams));
-    // Always clear MFA verification flag to force MFA after ADFS authentication
-    console.log('[DEBUG] Clearing mfa_verified flag');
-    sessionStorage.removeItem('mfa_verified');
+    // Only clear MFA verification flag on fresh page loads, not OAuth callbacks
+    if (!urlParams.has('code') && !urlParams.has('state')) {
+      console.log('[DEBUG] Fresh page load - clearing mfa_verified flag');
+      sessionStorage.removeItem('mfa_verified');
+    } else {
+      console.log('[DEBUG] OAuth callback detected - preserving OIDC state');
+    }
   }, []);
 
   useEffect(() => {

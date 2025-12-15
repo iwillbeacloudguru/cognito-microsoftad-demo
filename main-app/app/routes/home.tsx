@@ -77,19 +77,19 @@ export default function Home() {
 
   if (auth.isAuthenticated) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100">
         <div className="container mx-auto px-4 py-8">
           <div className="max-w-4xl mx-auto">
             <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-              <div className="bg-gradient-to-r from-green-600 to-emerald-600 px-6 py-4">
+              <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <h1 className="text-2xl font-bold text-white">Welcome!</h1>
-                    <p className="text-green-100">Successfully authenticated with Microsoft AD</p>
+                    <p className="text-blue-100">Successfully authenticated with Microsoft AD</p>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <div className="h-3 w-3 bg-green-400 rounded-full animate-pulse"></div>
-                    <span className="text-green-100 text-sm">Connected</span>
+                    <div className="h-3 w-3 bg-blue-400 rounded-full animate-pulse"></div>
+                    <span className="text-blue-100 text-sm">Connected</span>
                   </div>
                 </div>
               </div>
@@ -127,9 +127,9 @@ export default function Home() {
                 <div className="mb-6">
                   <h2 className="text-lg font-semibold text-gray-900 mb-4">Available Applications</h2>
                   <div className="grid gap-4">
-                    {/* NTTDATA-CS Portal - requires 'portal-users' group */}
-                    {auth.user?.profile['cognito:groups']?.includes('portal-users') ? (
-                      <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg p-6 text-white">
+                    {/* NTTDATA-CS Portal - requires 'portal-users' group or 'admin-group' */}
+                    {(auth.user?.profile['cognito:groups']?.includes('portal-users') || auth.user?.profile['cognito:groups']?.includes('admin-group')) ? (
+                      <div className="bg-gradient-to-r from-blue-500 to-blue-700 rounded-lg p-6 text-white">
                         <div className="flex items-center justify-between">
                           <div>
                             <h3 className="text-xl font-bold mb-2">NTTDATA-CS Portal</h3>
@@ -152,19 +152,19 @@ export default function Home() {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                           </svg>
                           <h3 className="text-lg font-medium mb-2">NTTDATA-CS Portal</h3>
-                          <p className="text-sm">Access restricted - requires 'portal-users' group</p>
+                          <p className="text-sm">Access restricted - requires 'portal-users' or 'admin-group'</p>
                         </div>
                       </div>
                     )}
                     
-                    {/* Admin Panel - requires 'admin' group */}
-                    {auth.user?.profile['cognito:groups']?.includes('admin') && (
-                      <div className="bg-gradient-to-r from-red-500 to-pink-600 rounded-lg p-6 text-white">
+                    {/* Admin Panel - requires 'admin' or 'admin-group' */}
+                    {(auth.user?.profile['cognito:groups']?.includes('admin') || auth.user?.profile['cognito:groups']?.includes('admin-group')) && (
+                      <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-lg p-6 text-white">
                         <div className="flex items-center justify-between">
                           <div>
                             <h3 className="text-xl font-bold mb-2">Admin Panel</h3>
-                            <p className="text-red-100 mb-4">System administration and user management</p>
-                            <button className="bg-white text-red-600 px-4 py-2 rounded-md font-medium hover:bg-red-50 transition duration-200">
+                            <p className="text-blue-100 mb-4">System administration and user management</p>
+                            <button className="bg-white text-blue-600 px-4 py-2 rounded-md font-medium hover:bg-blue-50 transition duration-200">
                               Launch Admin
                             </button>
                           </div>
@@ -218,7 +218,7 @@ export default function Home() {
                 <div className="flex justify-end">
                   <button 
                     onClick={() => signOutRedirect()}
-                    className="bg-red-600 text-white px-6 py-2 rounded-md hover:bg-red-700 transition duration-200 flex items-center space-x-2"
+                    className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition duration-200 flex items-center space-x-2"
                   >
                     <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />

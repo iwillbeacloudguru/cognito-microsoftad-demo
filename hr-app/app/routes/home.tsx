@@ -11,26 +11,46 @@ export function meta({}: Route.MetaArgs) {
 
 export default function Home() {
   const auth = useAuth();
+  const [tokenFromUrl, setTokenFromUrl] = useState<string | null>(null);
+  const [userProfile, setUserProfile] = useState<any>(null);
+
+  useEffect(() => {
+    // Check for token in URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+    
+    if (token) {
+      setTokenFromUrl(token);
+      // Decode JWT token to get user profile
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        setUserProfile(payload);
+      } catch (error) {
+        console.error('Error decoding token:', error);
+      }
+    }
+  }, []);
 
   // Function to check if user has HR access
   const hasHRAccess = () => {
-    if (!auth.user?.profile) return false;
+    const profile = userProfile || auth.user?.profile;
+    if (!profile) return false;
 
     // Check if user is from ADFS
-    const isAdfsUser = auth.user?.profile['cognito:groups']?.some((group: string) => 
+    const isAdfsUser = profile['cognito:groups']?.some((group: string) => 
       group.includes('ap-southeast-1_gYsQnwNf1_ms-adfs')
     );
 
     if (isAdfsUser) {
       // ADFS user - check if they match HR patterns
-      const userEmail = auth.user?.profile.email || '';
-      const username = auth.user?.profile['cognito:username'] || '';
+      const userEmail = profile.email || '';
+      const username = profile['cognito:username'] || '';
       const userText = `${userEmail} ${username}`.toLowerCase();
       
       return userText.includes('hr-') || userText.includes('human-resource');
     } else {
       // Cognito user - check for HR groups
-      return auth.user?.profile['cognito:groups']?.some((group: string) => 
+      return profile['cognito:groups']?.some((group: string) => 
         ['hr-users', 'admin-group'].includes(group)
       );
     }
@@ -55,7 +75,7 @@ export default function Home() {
     );
   }
 
-  if (!auth.isAuthenticated) {
+  if (!auth.isAuthenticated && !tokenFromUrl) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-red-50 to-red-100 flex items-center justify-center">
         <div className="bg-white p-8 rounded-lg shadow-lg max-w-md w-full mx-4">
@@ -162,15 +182,16 @@ export default function Home() {
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">User Access Information</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <p className="text-sm text-gray-600">Email: {auth.user?.profile.email}</p>
+                    <p className="text-sm text-gray-600">Email: {(userProfile || auth.user?.profile)?.email}</p>
                     <p className="text-sm text-gray-600">
-                      Authentication: {auth.user?.profile.identities ? 'Microsoft AD' : 'Cognito'}
+                      Authentication: {(userProfile || auth.user?.profile)?.identities ? 'Microsoft AD' : 'Cognito'}
                     </p>
+                    {tokenFromUrl && <p className="text-sm text-blue-600">Session shared from Main App</p>}
                   </div>
                   <div>
                     <p className="text-sm text-gray-600">Groups:</p>
                     <div className="flex flex-wrap gap-1 mt-1">
-                      {auth.user?.profile['cognito:groups']?.map((group: string) => (
+                      {(userProfile || auth.user?.profile)?.['cognito:groups']?.map((group: string) => (
                         <span key={group} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
                           {group}
                         </span>

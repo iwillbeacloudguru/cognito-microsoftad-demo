@@ -245,7 +245,12 @@ export default function Home() {
                               <h3 className="text-xl font-bold mb-2">{app.name}</h3>
                               <p className="text-blue-100 mb-4">{app.description}</p>
                               <button 
-                                onClick={() => appKey === 'hr-system' ? window.open('https://hr.nttdata-cs.com', '_blank') : null}
+                                onClick={() => {
+                                  if (appKey === 'hr-system') {
+                                    const token = auth.user?.access_token;
+                                    window.open(`http://localhost:3001?token=${token}`, '_blank');
+                                  }
+                                }}
                                 className="bg-white text-blue-600 px-4 py-2 rounded-md font-medium hover:bg-blue-50 transition duration-200"
                               >
                                 Launch {app.name.split(' ')[0]}

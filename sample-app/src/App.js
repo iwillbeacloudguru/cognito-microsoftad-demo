@@ -30,7 +30,7 @@ function App() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
 
-  const { hasTotpDevice, loadMfaOptions } = useMfa(user?.getUsername());
+  const { hasTotpDevice, loadMfaOptions } = useMfa(user);
 
   useEffect(() => {
     checkCurrentSession();
@@ -64,31 +64,27 @@ function App() {
         
         if (tokenResponse.ok) {
           const tokens = await tokenResponse.json();
-          // Create session from tokens
-          const { CognitoIdToken, CognitoAccessToken, CognitoRefreshToken } = await import('amazon-cognito-identity-js');
           
-          const idToken = new CognitoIdToken({ IdToken: tokens.id_token });
-          const accessToken = new CognitoAccessToken({ AccessToken: tokens.access_token });
-          const refreshToken = new CognitoRefreshToken({ RefreshToken: tokens.refresh_token });
-          
-          const sessionData = {
-            IdToken: idToken,
-            AccessToken: accessToken,
-            RefreshToken: refreshToken
-          };
-          
-          // Extract username from ID token
+          // Extract user info from ID token
           const payload = JSON.parse(atob(tokens.id_token.split('.')[1]));
           const username = payload['cognito:username'] || payload.sub;
+          const email = payload.email;
           
-          // Create user object
-          const { CognitoUser } = await import('amazon-cognito-identity-js');
-          const cognitoUser = new CognitoUser({
-            Username: username,
-            Pool: (await import('./api')).userPool
-          });
+          // Create a simple user object for federated users
+          const federatedUser = {
+            getUsername: () => username,
+            getEmail: () => email,
+            isFederated: true
+          };
           
-          setUser(cognitoUser);
+          // Create session object
+          const sessionData = {
+            getIdToken: () => ({ getJwtToken: () => tokens.id_token }),
+            getAccessToken: () => ({ getJwtToken: () => tokens.access_token }),
+            getRefreshToken: () => ({ getToken: () => tokens.refresh_token })
+          };
+          
+          setUser(federatedUser);
           setSession(sessionData);
           setAuthStage('authenticated');
           

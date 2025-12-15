@@ -1,12 +1,22 @@
 import { useState, useEffect } from 'react';
 import { getMFAOptions } from '../api';
 
-export const useMfa = (username) => {
+export const useMfa = (user) => {
   const [mfaOptions, setMfaOptions] = useState([]);
   const [loading, setLoading] = useState(false);
 
   const loadMfaOptions = async () => {
+    if (!user) return;
+    
+    // Skip MFA options loading for federated users
+    if (user.isFederated) {
+      setMfaOptions([]);
+      return;
+    }
+    
+    const username = typeof user === 'string' ? user : user.getUsername();
     if (!username) return;
+    
     setLoading(true);
     try {
       const options = await getMFAOptions(username);
@@ -26,7 +36,7 @@ export const useMfa = (username) => {
 
   useEffect(() => {
     loadMfaOptions();
-  }, [username]);
+  }, [user]);
 
   return {
     mfaOptions,

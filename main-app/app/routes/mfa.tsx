@@ -18,10 +18,24 @@ export default function MFA() {
   const [mfaEnabled, setMfaEnabled] = useState(false);
 
   useEffect(() => {
-    if (auth.isAuthenticated && auth.user?.profile.phone_number_verified) {
-      setMfaEnabled(true);
+    console.log('MFA Status Check:');
+    console.log('User profile:', auth.user?.profile);
+    console.log('phone_number_verified:', auth.user?.profile.phone_number_verified);
+    console.log('All profile keys:', Object.keys(auth.user?.profile || {}));
+    
+    if (auth.isAuthenticated) {
+      // Check multiple possible MFA indicators
+      const phoneVerified = auth.user?.profile.phone_number_verified;
+      const mfaEnabled = auth.user?.profile['custom:mfa_enabled'];
+      const softwareTokenMfa = auth.user?.profile['software_token_mfa_enabled'];
+      
+      console.log('MFA indicators:', { phoneVerified, mfaEnabled, softwareTokenMfa });
+      
+      if (phoneVerified || mfaEnabled || softwareTokenMfa) {
+        setMfaEnabled(true);
+      }
     }
-  }, [auth.isAuthenticated]);
+  }, [auth.isAuthenticated, auth.user]);
 
   const setupMFA = async () => {
     console.log('Starting MFA setup...');

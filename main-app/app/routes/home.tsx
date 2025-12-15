@@ -142,20 +142,26 @@ export default function Home() {
                               <span className="text-xs text-gray-400">No groups assigned</span>
                             }
                           </div>
-                          {/* Debug: Show raw ADFS groups */}
+                          {/* Debug: Show all profile attributes */}
                           {(() => {
+                            console.log('Full User Profile:', auth.user?.profile);
+                            console.log('All Profile Keys:', Object.keys(auth.user?.profile || {}));
+                            
                             const adfsGroups = auth.user?.profile['custom:adfs_groups'];
-                            if (adfsGroups) {
-                              console.log('ADFS Groups Type:', typeof adfsGroups);
-                              console.log('ADFS Groups Value:', adfsGroups);
-                              console.log('ADFS Groups JSON:', JSON.stringify(adfsGroups));
-                            }
-                            return adfsGroups ? (
+                            console.log('custom:adfs_groups:', adfsGroups);
+                            
+                            // Check for other possible group attributes
+                            const possibleGroupKeys = Object.keys(auth.user?.profile || {}).filter(key => 
+                              key.toLowerCase().includes('group') || key.toLowerCase().includes('adfs')
+                            );
+                            console.log('Possible group keys:', possibleGroupKeys);
+                            
+                            return (
                               <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs">
-                                <p className="text-yellow-700 font-medium">Debug - Raw ADFS Groups:</p>
-                                <p className="text-yellow-600 break-all">{JSON.stringify(adfsGroups)}</p>
+                                <p className="text-yellow-700 font-medium">Debug - All Profile Attributes:</p>
+                                <p className="text-yellow-600 break-all text-xs">{JSON.stringify(auth.user?.profile, null, 2)}</p>
                               </div>
-                            ) : null;
+                            );
                           })()}
                         </div>
                       </div>

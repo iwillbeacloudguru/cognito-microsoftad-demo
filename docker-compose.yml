@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  main-app:
+    build:
+      context: ./main-app
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+    container_name: cognito-main-app
+
+  hr-app:
+    build:
+      context: ./hr-app
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3000"
+    environment:
+      - NODE_ENV=production
+    container_name: cognito-hr-app
+    depends_on:
+      - main-app

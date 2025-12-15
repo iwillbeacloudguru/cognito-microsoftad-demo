@@ -1,7 +1,6 @@
 import { useAuth } from "react-oidc-context";
-import { useEffect } from "react";
-import { useNavigate } from "react-router";
-import type { Route } from "./+types/hr-app";
+import { useEffect, useState } from "react";
+import type { Route } from "./+types/home";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -10,9 +9,8 @@ export function meta({}: Route.MetaArgs) {
   ];
 }
 
-export default function HRApp() {
+export default function Home() {
   const auth = useAuth();
-  const navigate = useNavigate();
 
   // Function to check if user has HR access
   const hasHRAccess = () => {
@@ -38,12 +36,13 @@ export default function HRApp() {
     }
   };
 
-  useEffect(() => {
-    if (auth.isAuthenticated && !hasHRAccess()) {
-      // Redirect to home if user doesn't have HR access
-      navigate('/');
-    }
-  }, [auth.isAuthenticated, navigate]);
+  const signOutRedirect = () => {
+    auth.removeUser();
+    const cognitoDomain = "https://auth.nttdata-cs.com";
+    const clientId = "5tai0tc43qpu5fq4l8hukmh9q3";
+    const logoutUri = "https://demo.nttdata-cs.com";
+    window.location.href = `${cognitoDomain}/logout?client_id=${clientId}&logout_uri=${encodeURIComponent(logoutUri)}`;
+  };
 
   if (auth.isLoading) {
     return (
@@ -61,8 +60,8 @@ export default function HRApp() {
       <div className="min-h-screen bg-gradient-to-br from-red-50 to-red-100 flex items-center justify-center">
         <div className="bg-white p-8 rounded-lg shadow-lg max-w-md w-full mx-4">
           <div className="text-center">
-            <h3 className="text-lg font-medium text-red-900 mb-2">Access Denied</h3>
-            <p className="text-red-600 mb-4">Please sign in to access this application.</p>
+            <h3 className="text-lg font-medium text-red-900 mb-2">Access Required</h3>
+            <p className="text-red-600 mb-4">Please sign in to access the HR Management System.</p>
             <button 
               onClick={() => auth.signinRedirect()}
               className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition duration-200"
@@ -86,10 +85,10 @@ export default function HRApp() {
             <h3 className="text-lg font-medium text-red-900 mb-2">Access Denied</h3>
             <p className="text-red-600 mb-4">You don't have permission to access the HR Management System.</p>
             <button 
-              onClick={() => navigate('/')}
+              onClick={() => window.location.href = 'https://demo.nttdata-cs.com'}
               className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition duration-200"
             >
-              Back to Home
+              Back to Main Portal
             </button>
           </div>
         </div>
@@ -109,10 +108,10 @@ export default function HRApp() {
                   <p className="text-blue-100">Employee records and HR processes</p>
                 </div>
                 <button 
-                  onClick={() => navigate('/')}
-                  className="bg-white bg-opacity-20 text-blue-600 px-4 py-2 rounded-md hover:bg-opacity-30 transition duration-200"
+                  onClick={() => signOutRedirect()}
+                  className="bg-white bg-opacity-20 text-white px-4 py-2 rounded-md hover:bg-opacity-30 transition duration-200"
                 >
-                  Back to Home
+                  Sign Out
                 </button>
               </div>
             </div>

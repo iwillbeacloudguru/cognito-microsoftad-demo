@@ -4,13 +4,14 @@
 echo "Pruning Docker system..."
 docker system prune -f
 
-# Remove existing container if it exists
-echo "Removing existing container..."
-docker rm -f cognito-ad-demo 2>/dev/null || true
+# Stop and remove existing containers
+echo "Stopping existing containers..."
+docker-compose down
 
-# Build and run main-app
-echo "Building and starting main-app..."
-docker build -t cognito-ad-demo ./main-app
-docker run -d -p 3000:3000 --name cognito-ad-demo cognito-ad-demo
+# Build and run both applications
+echo "Building and starting both applications..."
+docker-compose up --build -d
 
-echo "Main-app container started successfully!"
+echo "Applications started successfully!"
+echo "Main App: http://localhost:3000"
+echo "HR App: http://localhost:3001"

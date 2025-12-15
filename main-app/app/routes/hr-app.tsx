@@ -1,6 +1,6 @@
 import { useAuth } from "react-oidc-context";
 import { useEffect } from "react";
-import { useNavigate } from "@remix-run/react";
+import { useNavigate } from "react-router";
 import type { Route } from "./+types/hr-app";
 
 export function meta({}: Route.MetaArgs) {

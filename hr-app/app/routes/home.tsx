@@ -2,6 +2,7 @@ import { useAuth } from "react-oidc-context";
 import { useEffect, useState } from "react";
 import type { Route } from "./+types/home";
 import Navbar from "../components/Navbar";
+import { theme } from "../styles/theme";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -124,14 +125,14 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-red-50">
+    <div className={theme.layout.pageRed}>
       <Navbar 
         userEmail={(userProfile || auth.user?.profile)?.email}
         onSignOut={signOutRedirect}
       />
-      <div className="container mx-auto px-4 py-8">
+      <div className={theme.layout.container}>
         <div className="max-w-6xl mx-auto">
-          <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+          <div className={theme.card}>
             
             <div className="p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -143,7 +144,7 @@ export default function Home() {
                     <h3 className="text-lg font-semibold text-gray-900">Employee Directory</h3>
                   </div>
                   <p className="text-gray-600 mb-4">Manage employee profiles and contact information</p>
-                  <button className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition duration-200">
+                  <button className={theme.button.primary}>
                     View Directory
                   </button>
                 </div>
@@ -156,7 +157,7 @@ export default function Home() {
                     <h3 className="text-lg font-semibold text-gray-900">Leave Management</h3>
                   </div>
                   <p className="text-gray-600 mb-4">Process leave requests and manage time off</p>
-                  <button className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition duration-200">
+                  <button className={theme.button.success}>
                     Manage Leaves
                   </button>
                 </div>
@@ -189,7 +190,7 @@ export default function Home() {
                     <p className="text-sm text-gray-600">Groups:</p>
                     <div className="flex flex-wrap gap-1 mt-1">
                       {(userProfile || auth.user?.profile)?.['cognito:groups']?.map((group: string) => (
-                        <span key={group} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                        <span key={group} className={theme.badge.blue}>
                           {group}
                         </span>
                       ))}

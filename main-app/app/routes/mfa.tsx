@@ -2,6 +2,7 @@ import { useAuth } from "react-oidc-context";
 import { useState } from "react";
 import { CognitoIdentityProviderClient, AssociateSoftwareTokenCommand, VerifySoftwareTokenCommand, SetUserMFAPreferenceCommand } from "@aws-sdk/client-cognito-identity-provider";
 import Navbar from "../components/Navbar";
+import { theme } from "../styles/theme";
 import type { Route } from "./+types/mfa";
 
 export function meta({}: Route.MetaArgs) {
@@ -65,7 +66,7 @@ export default function MFA() {
   }
 
   return (
-    <div className="min-h-screen bg-blue-50">
+    <div className={theme.layout.page}>
       <Navbar 
         mfaEnabled={mfaEnabled}
         showMfaManage={false}
@@ -74,10 +75,17 @@ export default function MFA() {
         setShowTokens={() => {}}
         onSignOut={() => {}}
       />
-      <div className="container mx-auto px-4 py-8">
+      <div className={theme.layout.container}>
         <div className="max-w-2xl mx-auto">
-          <div className="bg-white rounded-lg shadow-lg p-6">
-            <h1 className="text-2xl font-bold text-gray-900 mb-6">Multi-Factor Authentication</h1>
+          <div className={theme.card}>
+            <div className="flex items-center mb-6">
+              <a href="/" className="mr-4 text-blue-600 hover:text-blue-800">
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </a>
+              <h1 className="text-2xl font-bold text-gray-900">Multi-Factor Authentication</h1>
+            </div>
             
             {!mfaEnabled && !mfaSetup.show && (
               <div className="text-center">
@@ -90,7 +98,7 @@ export default function MFA() {
                 </div>
                 <button
                   onClick={setupMFA}
-                  className="bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700 text-lg"
+                  className={`${theme.button.primary} px-6 py-3 text-lg`}
                 >
                   Setup MFA
                 </button>
@@ -124,19 +132,19 @@ export default function MFA() {
                       value={mfaSetup.verificationCode}
                       onChange={(e) => setMfaSetup({...mfaSetup, verificationCode: e.target.value})}
                       placeholder="123456"
-                      className="border rounded px-3 py-2 w-32"
+                      className={`${theme.input} w-32`}
                       maxLength={6}
                     />
                     <button
                       onClick={verifyMFA}
                       disabled={mfaSetup.verificationCode.length !== 6}
-                      className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 disabled:opacity-50"
+                      className={`${theme.button.success} disabled:opacity-50`}
                     >
                       Verify & Enable
                     </button>
                     <button
                       onClick={() => setMfaSetup({ show: false, qrCode: '', secret: '', verificationCode: '' })}
-                      className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
+                      className={theme.button.secondary}
                     >
                       Cancel
                     </button>

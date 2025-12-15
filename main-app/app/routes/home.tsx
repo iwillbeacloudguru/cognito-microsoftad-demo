@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import type { Route } from "./+types/home";
 import { CognitoIdentityProviderClient, AssociateSoftwareTokenCommand, VerifySoftwareTokenCommand, SetUserMFAPreferenceCommand } from "@aws-sdk/client-cognito-identity-provider";
 import Navbar from "../components/Navbar";
+import { theme } from "../styles/theme";
 
 // Meta information for the page
 export function meta({}: Route.MetaArgs) {
@@ -285,7 +286,7 @@ export default function Home() {
   // Render authenticated user interface
   if (auth.isAuthenticated) {
     return (
-      <div className="min-h-screen bg-blue-50">
+      <div className={theme.layout.page}>
         <Navbar 
           mfaEnabled={mfaEnabled}
           showMfaManage={false}
@@ -294,12 +295,31 @@ export default function Home() {
           setShowTokens={setShowTokens}
           onSignOut={signOutRedirect}
         />
-        <div className="container mx-auto px-4 py-8">
+        <div className={theme.layout.container}>
           <div className="max-w-4xl mx-auto">
-            <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+            <div className={theme.card}>
               
               <div className="p-6">
 
+
+                {mfaEnabled && (
+                  <div className="mb-6">
+                    <h2 className="text-lg font-semibold text-gray-900 mb-2">Multi-Factor Authentication</h2>
+                    <div className={theme.alert.success}>
+                      <div className="flex items-center space-x-3">
+                        <div className="h-8 w-8 bg-green-100 rounded-full flex items-center justify-center">
+                          <svg className="h-5 w-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                        </div>
+                        <div>
+                          <h3 className="text-sm font-medium text-green-800">MFA is Active</h3>
+                          <p className="text-sm text-green-700">Your account is protected with TOTP authentication</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 <div className="mb-6">
                   <h2 className="text-lg font-semibold text-gray-900 mb-2">User Information</h2>
@@ -320,7 +340,7 @@ export default function Home() {
                           <div className="flex flex-wrap gap-1 mt-1">
                             {/* Cognito Groups */}
                             {auth.user?.profile['cognito:groups']?.map((group: string) => (
-                              <span key={group} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                              <span key={group} className={theme.badge.blue}>
                                 {group}
                               </span>
                             ))}
@@ -338,7 +358,7 @@ export default function Home() {
                               return groupsArray.map((group: string) => {
                                 const decodedGroup = decodeURIComponent(group).replace(/.*\\/, '');
                                 return (
-                                  <span key={group} className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
+                                  <span key={group} className={theme.badge.green}>
                                     {decodedGroup}
                                   </span>
                                 );

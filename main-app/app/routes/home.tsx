@@ -109,28 +109,74 @@ export default function Home() {
                         <p className="text-sm text-gray-500">
                           {auth.user?.profile.identities ? 'Authenticated via Microsoft AD' : 'Authenticated via Cognito'}
                         </p>
+                        <div className="mt-2">
+                          <p className="text-xs text-gray-400">Groups:</p>
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {auth.user?.profile['cognito:groups']?.map((group: string) => (
+                              <span key={group} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                                {group}
+                              </span>
+                            )) || <span className="text-xs text-gray-400">No groups assigned</span>}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
 
                 <div className="mb-6">
-                  <h2 className="text-lg font-semibold text-gray-900 mb-4">Available Microsites</h2>
-                  <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg p-6 text-white">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="text-xl font-bold mb-2">NTTDATA-CS Portal</h3>
-                        <p className="text-blue-100 mb-4">Access your corporate applications and resources</p>
-                        <button className="bg-white text-blue-600 px-4 py-2 rounded-md font-medium hover:bg-blue-50 transition duration-200">
-                          Launch Portal
-                        </button>
+                  <h2 className="text-lg font-semibold text-gray-900 mb-4">Available Applications</h2>
+                  <div className="grid gap-4">
+                    {/* NTTDATA-CS Portal - requires 'portal-users' group */}
+                    {auth.user?.profile['cognito:groups']?.includes('portal-users') ? (
+                      <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg p-6 text-white">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h3 className="text-xl font-bold mb-2">NTTDATA-CS Portal</h3>
+                            <p className="text-blue-100 mb-4">Access your corporate applications and resources</p>
+                            <button className="bg-white text-blue-600 px-4 py-2 rounded-md font-medium hover:bg-blue-50 transition duration-200">
+                              Launch Portal
+                            </button>
+                          </div>
+                          <div className="h-16 w-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                            <svg className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9v-9m0-9v9" />
+                            </svg>
+                          </div>
+                        </div>
                       </div>
-                      <div className="h-16 w-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
-                        <svg className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9v-9m0-9v9" />
-                        </svg>
+                    ) : (
+                      <div className="bg-gray-100 rounded-lg p-6 border-2 border-dashed border-gray-300">
+                        <div className="text-center text-gray-500">
+                          <svg className="h-12 w-12 mx-auto mb-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                          </svg>
+                          <h3 className="text-lg font-medium mb-2">NTTDATA-CS Portal</h3>
+                          <p className="text-sm">Access restricted - requires 'portal-users' group</p>
+                        </div>
                       </div>
-                    </div>
+                    )}
+                    
+                    {/* Admin Panel - requires 'admin' group */}
+                    {auth.user?.profile['cognito:groups']?.includes('admin') && (
+                      <div className="bg-gradient-to-r from-red-500 to-pink-600 rounded-lg p-6 text-white">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h3 className="text-xl font-bold mb-2">Admin Panel</h3>
+                            <p className="text-red-100 mb-4">System administration and user management</p>
+                            <button className="bg-white text-red-600 px-4 py-2 rounded-md font-medium hover:bg-red-50 transition duration-200">
+                              Launch Admin
+                            </button>
+                          </div>
+                          <div className="h-16 w-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                            <svg className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
 

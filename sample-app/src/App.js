@@ -34,13 +34,37 @@ function App() {
 
   if (auth.isAuthenticated) {
     return (
-      <div>
-        <pre> Hello: {auth.user?.profile.email} </pre>
-        <pre> ID Token: {auth.user?.id_token} </pre>
-        <pre> Access Token: {auth.user?.access_token} </pre>
-        <pre> Refresh Token: {auth.user?.refresh_token} </pre>
-
-        <button onClick={() => auth.removeUser()}>Sign out</button>
+      <div style={{padding: '20px', fontFamily: 'Arial, sans-serif'}}>
+        <h1>Welcome to NTT DATA Demo</h1>
+        <div style={{backgroundColor: '#f5f5f5', padding: '15px', borderRadius: '5px', marginBottom: '20px'}}>
+          <h3>User Information</h3>
+          <p><strong>Email:</strong> {auth.user?.profile.email}</p>
+          <p><strong>Name:</strong> {auth.user?.profile.name || 'N/A'}</p>
+          <p><strong>Subject:</strong> {auth.user?.profile.sub}</p>
+        </div>
+        
+        <div style={{backgroundColor: '#f0f8ff', padding: '15px', borderRadius: '5px', marginBottom: '20px'}}>
+          <h3>Tokens</h3>
+          <div style={{marginBottom: '10px'}}>
+            <strong>ID Token:</strong>
+            <textarea readOnly value={auth.user?.id_token} style={{width: '100%', height: '80px', fontSize: '10px'}} />
+          </div>
+          <div style={{marginBottom: '10px'}}>
+            <strong>Access Token:</strong>
+            <textarea readOnly value={auth.user?.access_token} style={{width: '100%', height: '80px', fontSize: '10px'}} />
+          </div>
+          <div style={{marginBottom: '10px'}}>
+            <strong>Refresh Token:</strong>
+            <textarea readOnly value={auth.user?.refresh_token} style={{width: '100%', height: '80px', fontSize: '10px'}} />
+          </div>
+        </div>
+        
+        <button 
+          onClick={() => auth.removeUser()} 
+          style={{backgroundColor: '#dc3545', color: 'white', padding: '10px 20px', border: 'none', borderRadius: '5px', cursor: 'pointer'}}
+        >
+          Sign Out
+        </button>
       </div>
     );
   }

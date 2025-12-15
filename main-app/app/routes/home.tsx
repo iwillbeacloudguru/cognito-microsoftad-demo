@@ -77,28 +77,20 @@ export default function Home() {
 
   // Application-Group mapping configuration
   const appConfig = {
-    "nttdata-portal": {
-      "name": "NTTDATA-CS Portal",
-      "description": "Access your corporate applications and resources",
-      "gradient": "from-blue-500 to-blue-700",
-      "requiredGroups": ["portal-users", "admin-group"],
-      "adfsGroups": ["Domain Users", "Internal Application Users"],
-      "adfsProvider": "ms-adfs"
-    },
-    "admin-panel": {
-      "name": "Admin Panel",
-      "description": "System administration and user management",
-      "gradient": "from-blue-600 to-blue-800",
-      "requiredGroups": ["admin", "admin-group"],
-      "adfsGroups": [],
-      "adfsProvider": null
-    },
     "hr-system": {
       "name": "HR Management",
       "description": "Employee records and HR processes",
       "gradient": "from-green-500 to-green-700",
       "requiredGroups": ["hr-users"],
       "adfsGroups": ["HR Department"],
+      "adfsProvider": "ms-adfs"
+    },
+    "finance-dashboard": {
+      "name": "Finance Dashboard",
+      "description": "Financial analytics and reporting",
+      "gradient": "from-yellow-500 to-yellow-700",
+      "requiredGroups": ["finance-team"],
+      "adfsGroups": ["Finance Department"],
       "adfsProvider": "ms-adfs"
     }
   };

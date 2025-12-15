@@ -6,9 +6,18 @@ import {
   Scripts,
   ScrollRestoration,
 } from "react-router";
+import { AuthProvider } from "react-oidc-context";
 
 import type { Route } from "./+types/root";
 import "./app.css";
+
+const cognitoAuthConfig = {
+  authority: "https://cognito-idp.ap-southeast-1.amazonaws.com/ap-southeast-1_gYsQnwNf1",
+  client_id: "5tai0tc43qpu5fq4l8hukmh9q3",
+  redirect_uri: "https://demo.nttdata-cs.com",
+  response_type: "code",
+  scope: "aws.cognito.signin.user.admin email openid",
+};
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -42,7 +51,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
-  return <Outlet />;
+  return (
+    <AuthProvider {...cognitoAuthConfig}>
+      <Outlet />
+    </AuthProvider>
+  );
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {

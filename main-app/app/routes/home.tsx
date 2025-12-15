@@ -121,6 +121,7 @@ export default function Home() {
                             {/* ADFS Groups */}
                             {(() => {
                               const adfsGroups = auth.user?.profile['custom:adfs_groups'];
+                              console.log('ADFS Groups for display:', adfsGroups);
                               if (!adfsGroups) return null;
                               
                               // Handle both string and array formats

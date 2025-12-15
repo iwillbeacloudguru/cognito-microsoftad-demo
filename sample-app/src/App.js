@@ -417,7 +417,7 @@ function App() {
     const cognitoDomain = process.env.REACT_APP_COGNITO_DOMAIN;
     const clientId = process.env.REACT_APP_COGNITO_CLIENT_ID;
     const redirectUri = encodeURIComponent(window.location.origin);
-    const adfsLoginUrl = `${cognitoDomain}/oauth2/authorize?identity_provider=ADFS&redirect_uri=${redirectUri}&response_type=CODE&client_id=${clientId}&scope=email+openid+aws.cognito.signin.user.admin`;
+    const adfsLoginUrl = `${cognitoDomain}/login?client_id=${clientId}&response_type=code&scope=email+openid&redirect_uri=${redirectUri}`;
     
     window.location.href = adfsLoginUrl;
   };

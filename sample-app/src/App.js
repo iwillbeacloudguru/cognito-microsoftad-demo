@@ -332,7 +332,7 @@ function App() {
     await auth.removeUser();
     
     // First logout from ADFS
-    const adfsLogoutUrl = "https://adfs.nttdata-cs.com/adfs/ls/?wa=wsignout1.0";
+    const adfsLogoutUrl = "https://adfs.nttdata-cs.com/adfs/ls/idpinitiatedsignon.aspx?loginToRp=urn:amazon:cognito:sp:ap-southeast-1_gYsQnwNf1&wa=wsignout1.0";
     console.log('[DEBUG] Logging out from ADFS first:', adfsLogoutUrl);
     
     // Create hidden iframe to logout from ADFS

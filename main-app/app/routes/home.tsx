@@ -29,6 +29,20 @@ export default function Home() {
     }
   }, [auth.error]);
 
+  // Cross-tab session synchronization
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'logout-event') {
+        // Another tab logged out, clear this tab's session
+        auth.removeUser();
+        window.location.reload();
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, [auth]);
+
   /**
    * Handles user sign out process
    * 1. Removes local user session
@@ -37,6 +51,10 @@ export default function Home() {
    */
   const signOutRedirect = async () => {
     try {
+      // Broadcast logout to all tabs
+      localStorage.setItem('logout-event', Date.now().toString());
+      localStorage.removeItem('logout-event');
+      
       // Clear local session first
       await auth.removeUser();
       

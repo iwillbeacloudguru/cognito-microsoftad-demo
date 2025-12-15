@@ -124,9 +124,9 @@ export default function Home() {
                               if (!adfsGroups) return null;
                               
                               // Handle both string and array formats
-                              const groupsArray = typeof adfsGroups === 'string' 
+                              const groupsArray: string[] = typeof adfsGroups === 'string' 
                                 ? adfsGroups.split(',').map(g => g.trim())
-                                : adfsGroups;
+                                : Array.isArray(adfsGroups) ? adfsGroups : [];
                               
                               return groupsArray.map((group: string) => {
                                 const decodedGroup = decodeURIComponent(group).replace(/.*\\/, '');
@@ -142,12 +142,20 @@ export default function Home() {
                             }
                           </div>
                           {/* Debug: Show raw ADFS groups */}
-                          {auth.user?.profile['custom:adfs_groups'] && (
-                            <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs">
-                              <p className="text-yellow-700 font-medium">Debug - Raw ADFS Groups:</p>
-                              <p className="text-yellow-600 break-all">{JSON.stringify(auth.user.profile['custom:adfs_groups'])}</p>
-                            </div>
-                          )}
+                          {(() => {
+                            const adfsGroups = auth.user?.profile['custom:adfs_groups'];
+                            if (adfsGroups) {
+                              console.log('ADFS Groups Type:', typeof adfsGroups);
+                              console.log('ADFS Groups Value:', adfsGroups);
+                              console.log('ADFS Groups JSON:', JSON.stringify(adfsGroups));
+                            }
+                            return adfsGroups ? (
+                              <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs">
+                                <p className="text-yellow-700 font-medium">Debug - Raw ADFS Groups:</p>
+                                <p className="text-yellow-600 break-all">{JSON.stringify(adfsGroups)}</p>
+                              </div>
+                            ) : null;
+                          })()}
                         </div>
                       </div>
                     </div>
@@ -164,9 +172,9 @@ export default function Home() {
                         const adfsGroups = auth.user?.profile['custom:adfs_groups'];
                         if (!adfsGroups) return false;
                         
-                        const groupsArray = typeof adfsGroups === 'string' 
+                        const groupsArray: string[] = typeof adfsGroups === 'string' 
                           ? adfsGroups.split(',').map(g => g.trim())
-                          : adfsGroups;
+                          : Array.isArray(adfsGroups) ? adfsGroups : [];
                         
                         return groupsArray.some((group: string) => 
                           decodeURIComponent(group).includes('Internal Application Users') || 

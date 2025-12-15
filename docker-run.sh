@@ -4,6 +4,10 @@
 echo "Pruning Docker system..."
 docker system prune -f
 
+# Remove existing container if it exists
+echo "Removing existing container..."
+docker rm -f cognito-ad-demo 2>/dev/null || true
+
 # Build and run main-app
 echo "Building and starting main-app..."
 docker build -t cognito-ad-demo ./main-app

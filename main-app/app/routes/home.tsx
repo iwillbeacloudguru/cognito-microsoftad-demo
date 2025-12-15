@@ -48,6 +48,13 @@ export default function Home() {
     return () => window.removeEventListener('storage', handleStorageChange);
   }, [auth]);
 
+  // Check MFA status on load
+  useEffect(() => {
+    if (auth.isAuthenticated && auth.user?.profile.phone_number_verified) {
+      setMfaEnabled(true);
+    }
+  }, [auth.isAuthenticated]);
+
   /**
    * Handles user sign out process
    * 1. Removes local user session
@@ -204,13 +211,6 @@ export default function Home() {
       ) || false;
     }
   };
-
-  // Check MFA status on load
-  useEffect(() => {
-    if (auth.isAuthenticated && auth.user?.profile.phone_number_verified) {
-      setMfaEnabled(true);
-    }
-  }, [auth.isAuthenticated]);
 
   // Check if user needs MFA setup (Cognito users only)
   const needsMfaSetup = auth.isAuthenticated && 

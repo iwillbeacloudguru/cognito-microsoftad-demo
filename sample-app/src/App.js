@@ -30,8 +30,7 @@ function App() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
 
-  
-
+  const { hasTotpDevice, loadMfaOptions } = useMfa(user?.getUsername());
 
   useEffect(() => {
     checkCurrentSession();
@@ -65,8 +64,6 @@ function App() {
       setShowTotpVerify(true);
     }
   };
-
-  const { hasTotpDevice, loadMfaOptions } = useMfa(user?.getUsername());
 
 
 

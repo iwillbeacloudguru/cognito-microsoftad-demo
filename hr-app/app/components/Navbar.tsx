@@ -13,9 +13,16 @@ export default function Navbar({ userEmail, onSignOut }: NavbarProps) {
         </div>
         
         <div className="flex items-center space-x-4">
+          <a 
+            href="https://demo.nttdata-cs.com" 
+            className="text-red-100 hover:text-white text-sm px-3 py-1 rounded hover:bg-red-700 transition"
+          >
+            Main Portal
+          </a>
+          
           <button 
             onClick={onSignOut}
-            className="bg-red-700 hover:bg-red-800 px-3 py-1 rounded text-sm"
+            className="bg-red-700 hover:bg-red-800 text-white px-3 py-1 rounded text-sm transition"
           >
             Sign Out
           </button>

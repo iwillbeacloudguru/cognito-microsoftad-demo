@@ -62,6 +62,10 @@ function App() {
     }
   }, [auth.isAuthenticated]);
 
+  useEffect(() => {
+    console.log('[DEBUG] showTotpVerify state changed to:', showTotpVerify);
+  }, [showTotpVerify]);
+
   const checkMfaRequired = async () => {
     try {
       console.log('[DEBUG] Checking MFA requirements for:', auth.user.profile.email);
@@ -77,6 +81,7 @@ function App() {
       } else if (!mfaVerified) {
         console.log('[DEBUG] TOTP found but not verified, showing TOTP verify modal');
         setShowTotpVerify(true);
+        console.log('[DEBUG] showTotpVerify state set to true');
       } else {
         console.log('[DEBUG] MFA already verified, proceeding to app');
       }
@@ -281,18 +286,71 @@ function App() {
     });
   };
   
-  const signOutRedirect = async () => {
-    console.log('[DEBUG] Sign out initiated');
+  const clearAllCaches = async () => {
+    console.log('[DEBUG] Clearing all browser caches');
+    
+    // Clear storage
     localStorage.clear();
     sessionStorage.clear();
-    console.log('[DEBUG] Storage cleared, removing OIDC user');
+    
+    // Clear IndexedDB
+    if ('indexedDB' in window) {
+      try {
+        const databases = await indexedDB.databases();
+        await Promise.all(databases.map(db => {
+          return new Promise((resolve) => {
+            const deleteReq = indexedDB.deleteDatabase(db.name);
+            deleteReq.onsuccess = () => resolve();
+            deleteReq.onerror = () => resolve();
+          });
+        }));
+      } catch (e) {}
+    }
+    
+    // Clear Service Worker caches
+    if ('caches' in window) {
+      try {
+        const cacheNames = await caches.keys();
+        await Promise.all(cacheNames.map(name => caches.delete(name)));
+      } catch (e) {}
+    }
+    
+    // Clear cookies for current domain
+    document.cookie.split(";").forEach(cookie => {
+      const eqPos = cookie.indexOf("=");
+      const name = eqPos > -1 ? cookie.substr(0, eqPos) : cookie;
+      document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
+      document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=${window.location.hostname}`;
+      document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=.${window.location.hostname}`;
+    });
+  };
+
+  const signOutRedirect = async () => {
+    console.log('[DEBUG] Sign out initiated');
+    await clearAllCaches();
+    console.log('[DEBUG] All caches cleared, removing OIDC user');
     await auth.removeUser();
-    const clientId = "5tai0tc43qpu5fq4l8hukmh9q3";
-    const logoutUri = "https://demo.nttdata-cs.com";
-    const cognitoDomain = "https://ap-southeast-1gysqnwnf1.auth.ap-southeast-1.amazoncognito.com";
-    const logoutUrl = `${cognitoDomain}/logout?client_id=${clientId}&logout_uri=${encodeURIComponent(logoutUri)}&prompt=login`;
-    console.log('[DEBUG] Redirecting to logout URL:', logoutUrl);
-    window.location.href = logoutUrl;
+    
+    // First logout from ADFS
+    const adfsLogoutUrl = "https://adfs.nttdata-cs.com/adfs/ls/?wa=wsignout1.0";
+    console.log('[DEBUG] Logging out from ADFS first:', adfsLogoutUrl);
+    
+    // Create hidden iframe to logout from ADFS
+    const iframe = document.createElement('iframe');
+    iframe.style.display = 'none';
+    iframe.src = adfsLogoutUrl;
+    document.body.appendChild(iframe);
+    
+    // Wait for ADFS logout, then proceed to Cognito logout
+    setTimeout(() => {
+      document.body.removeChild(iframe);
+      const clientId = "5tai0tc43qpu5fq4l8hukmh9q3";
+      const logoutUri = "https://demo.nttdata-cs.com";
+      const cognitoDomain = "https://ap-southeast-1gysqnwnf1.auth.ap-southeast-1.amazoncognito.com";
+      const logoutUrl = `${cognitoDomain}/logout?client_id=${clientId}&logout_uri=${encodeURIComponent(logoutUri)}&prompt=login`;
+      console.log('[DEBUG] Redirecting to Cognito logout URL:', logoutUrl);
+      window.location.replace(logoutUrl);
+    }, 2000);
   };
 
   if (auth.isLoading) {

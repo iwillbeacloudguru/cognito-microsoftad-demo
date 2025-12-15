@@ -34,7 +34,75 @@ function App() {
 
   useEffect(() => {
     checkCurrentSession();
+    handleOAuthCallback();
   }, []);
+
+  const handleOAuthCallback = async () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get('code');
+    
+    if (code) {
+      setIsLoading(true);
+      try {
+        // Exchange authorization code for tokens
+        const cognitoDomain = 'https://ap-southeast-1gysqnwnf1.auth.ap-southeast-1.amazoncognito.com';
+        const clientId = process.env.REACT_APP_COGNITO_CLIENT_ID;
+        const redirectUri = window.location.origin;
+        
+        const tokenResponse = await fetch(`${cognitoDomain}/oauth2/token`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+          },
+          body: new URLSearchParams({
+            grant_type: 'authorization_code',
+            client_id: clientId,
+            code: code,
+            redirect_uri: redirectUri
+          })
+        });
+        
+        if (tokenResponse.ok) {
+          const tokens = await tokenResponse.json();
+          // Create session from tokens
+          const { CognitoIdToken, CognitoAccessToken, CognitoRefreshToken } = await import('amazon-cognito-identity-js');
+          
+          const idToken = new CognitoIdToken({ IdToken: tokens.id_token });
+          const accessToken = new CognitoAccessToken({ AccessToken: tokens.access_token });
+          const refreshToken = new CognitoRefreshToken({ RefreshToken: tokens.refresh_token });
+          
+          const sessionData = {
+            IdToken: idToken,
+            AccessToken: accessToken,
+            RefreshToken: refreshToken
+          };
+          
+          // Extract username from ID token
+          const payload = JSON.parse(atob(tokens.id_token.split('.')[1]));
+          const username = payload['cognito:username'] || payload.sub;
+          
+          // Create user object
+          const { CognitoUser } = await import('amazon-cognito-identity-js');
+          const cognitoUser = new CognitoUser({
+            Username: username,
+            Pool: (await import('./api')).userPool
+          });
+          
+          setUser(cognitoUser);
+          setSession(sessionData);
+          setAuthStage('authenticated');
+          
+          // Clean up URL
+          window.history.replaceState({}, document.title, window.location.pathname);
+        }
+      } catch (error) {
+        console.error('OAuth callback error:', error);
+        setError(error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+  };
 
   const checkCurrentSession = async () => {
     try {
@@ -345,6 +413,15 @@ function App() {
     }
   };
 
+  const handleADFSLogin = () => {
+    const cognitoDomain = 'https://ap-southeast-1gysqnwnf1.auth.ap-southeast-1.amazoncognito.com';
+    const clientId = process.env.REACT_APP_COGNITO_CLIENT_ID;
+    const redirectUri = encodeURIComponent(window.location.origin);
+    const adfsLoginUrl = `${cognitoDomain}/oauth2/authorize?identity_provider=ADFS&redirect_uri=${redirectUri}&response_type=CODE&client_id=${clientId}&scope=email+openid+aws.cognito.signin.user.admin`;
+    
+    window.location.href = adfsLoginUrl;
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full">
@@ -352,39 +429,58 @@ function App() {
           <div className="px-4 py-5 sm:p-6">
             <div className="text-center mb-6">
               <h1 className="text-3xl font-semibold text-gray-900 mb-2">Secure Login</h1>
-              <p className="text-gray-500">Sign in with Cognito MFA</p>
+              <p className="text-gray-500">Choose your authentication method</p>
             </div>
-            <form onSubmit={handleSignIn} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
-                <input
-                  type="text"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                  placeholder="Enter your username"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                  placeholder="Enter your password"
-                  required
-                />
-              </div>
+            
+            <div className="space-y-4">
               <button 
-                type="submit"
-                disabled={isLoading}
-                className="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-gray-400"
+                onClick={handleADFSLogin}
+                className="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >
-                {isLoading ? 'Signing In...' : 'Sign In'}
+                Sign In with ADFS (Microsoft AD)
               </button>
-            </form>
+              
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-gray-300" />
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-2 bg-white text-gray-500">Or</span>
+                </div>
+              </div>
+              
+              <form onSubmit={handleSignIn} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
+                  <input
+                    type="text"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                    placeholder="Enter your username"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                    placeholder="Enter your password"
+                    required
+                  />
+                </div>
+                <button 
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-gray-400"
+                >
+                  {isLoading ? 'Signing In...' : 'Sign In with Cognito'}
+                </button>
+              </form>
+            </div>
           </div>
         </div>
       </div>

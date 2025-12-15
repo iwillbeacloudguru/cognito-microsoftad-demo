@@ -106,7 +106,9 @@ export default function Home() {
                       </div>
                       <div>
                         <p className="font-medium text-gray-900">{auth.user?.profile.email || 'User'}</p>
-                        <p className="text-sm text-gray-500">Authenticated via Microsoft AD</p>
+                        <p className="text-sm text-gray-500">
+                          {auth.user?.profile.identities ? 'Authenticated via Microsoft AD' : 'Authenticated via Cognito'}
+                        </p>
                       </div>
                     </div>
                   </div>

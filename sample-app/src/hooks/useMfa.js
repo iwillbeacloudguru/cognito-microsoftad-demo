@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { getMFAOptions } from '../api';
 
-export const useMfa = (user) => {
+export const useMfa = (user, session) => {
   const [mfaOptions, setMfaOptions] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -13,12 +13,17 @@ export const useMfa = (user) => {
     
     setLoading(true);
     try {
-      if (user.isFederated) {
-        // For federated users, assume no MFA initially (will be set up via app)
-        setMfaOptions([]);
-      } else {
+      if (user.isFederated && session) {
+        // Use AWS SDK for federated users
+        const { getUserMFAStatus } = await import('../cognitoMfa');
+        const accessToken = session.getAccessToken()?.getJwtToken();
+        const mfaStatus = await getUserMFAStatus(accessToken);
+        setMfaOptions(mfaStatus);
+      } else if (!user.isFederated) {
         const options = await getMFAOptions(username);
         setMfaOptions(options || []);
+      } else {
+        setMfaOptions([]);
       }
     } catch (error) {
       console.error('Failed to load MFA options:', error);
@@ -29,10 +34,7 @@ export const useMfa = (user) => {
   };
 
   const hasTotpDevice = user?.isFederated 
-    ? (() => {
-        const mfaData = localStorage.getItem(`mfa_${user.getUsername()}`);
-        return mfaData ? JSON.parse(mfaData).enabled : false;
-      })()
+    ? mfaOptions.includes('SOFTWARE_TOKEN_MFA')
     : mfaOptions.some(option => 
         option.DeliveryMedium === 'SOFTWARE_TOKEN_MFA' || 
         option.AttributeName === 'SOFTWARE_TOKEN_MFA'

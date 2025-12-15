@@ -30,7 +30,7 @@ function App() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
 
-  const { hasTotpDevice, loadMfaOptions } = useMfa(user);
+  const { hasTotpDevice, loadMfaOptions } = useMfa(user, session);
 
   useEffect(() => {
     checkCurrentSession();
@@ -139,18 +139,17 @@ function App() {
 
 
   const setupTotp = async () => {
-    // For federated users, use application-level MFA
-    if (user?.isFederated) {
-      // Generate TOTP secret for federated user
-      const secret = generateTotpSecret();
-      setTotpSecret(secret);
-      setShowTotpSetup(true);
-      return;
-    }
-
     try {
-      const result = await setupMFA(user?.getUsername());
-      setTotpSecret(result.secretCode);
+      if (user?.isFederated) {
+        // Use AWS SDK for federated users
+        const { setupMFAForFederatedUser } = await import('./cognitoMfa');
+        const accessToken = session?.getAccessToken()?.getJwtToken();
+        const result = await setupMFAForFederatedUser(accessToken);
+        setTotpSecret(result.secretCode);
+      } else {
+        const result = await setupMFA(user?.getUsername());
+        setTotpSecret(result.secretCode);
+      }
       setShowTotpSetup(true);
     } catch (error) {
       console.error('Failed to setup MFA:', error);
@@ -177,12 +176,11 @@ function App() {
 
     try {
       if (user?.isFederated) {
-        // For federated users, store MFA locally (demo purposes)
-        localStorage.setItem(`mfa_${user.getUsername()}`, JSON.stringify({
-          secret: totpSecret,
-          enabled: true,
-          timestamp: new Date().toISOString()
-        }));
+        // Use AWS SDK for federated users
+        const { verifyMFAForFederatedUser, setMFAPreferenceForFederatedUser } = await import('./cognitoMfa');
+        const accessToken = session?.getAccessToken()?.getJwtToken();
+        await verifyMFAForFederatedUser(accessToken, totpCode);
+        await setMFAPreferenceForFederatedUser(accessToken);
       } else {
         await verifyMFASetup(user?.getUsername(), totpCode);
         await setMFAPreference(user?.getUsername(), true);
@@ -363,7 +361,7 @@ function App() {
 
   if (user && session && authStage === 'authenticated') {
     if (showMfaSettings) {
-      return <MfaSettings user={{ email: user.getUsername() }} onBack={() => setShowMfaSettings(false)} />;
+      return <MfaSettings user={{ email: user.getUsername(), isFederated: user.isFederated }} onBack={() => setShowMfaSettings(false)} />;
     }
 
     const mfaVerified = mfaInfo?.enabled;

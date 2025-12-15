@@ -17,13 +17,20 @@ function MfaSettings({ user, onBack }) {
 
   const loadMfaDevices = async () => {
     try {
-      const options = await getMFAOptions(user?.email);
-      setDevices(options || []);
-      const hasTOTP = options?.some(option => 
-        option.DeliveryMedium === 'SOFTWARE_TOKEN_MFA' || 
-        option.AttributeName === 'SOFTWARE_TOKEN_MFA'
-      );
-      setTotpRegistered(hasTOTP || false);
+      if (user?.isFederated) {
+        // Check localStorage for federated users
+        const mfaData = localStorage.getItem(`mfa_${user.email}`);
+        const hasTOTP = mfaData ? JSON.parse(mfaData).enabled : false;
+        setTotpRegistered(hasTOTP);
+      } else {
+        const options = await getMFAOptions(user?.email);
+        setDevices(options || []);
+        const hasTOTP = options?.some(option => 
+          option.DeliveryMedium === 'SOFTWARE_TOKEN_MFA' || 
+          option.AttributeName === 'SOFTWARE_TOKEN_MFA'
+        );
+        setTotpRegistered(hasTOTP || false);
+      }
     } catch (error) {
       console.error('Failed to load MFA options:', error);
     }
@@ -35,13 +42,29 @@ function MfaSettings({ user, onBack }) {
 
   const setupTotp = async () => {
     try {
-      const result = await setupMFA(user?.email);
-      setTotpSecret(result.secretCode);
-      setShowTotpSetup(true);
+      if (user?.isFederated) {
+        // Generate TOTP secret for federated users
+        const secret = generateTotpSecret();
+        setTotpSecret(secret);
+        setShowTotpSetup(true);
+      } else {
+        const result = await setupMFA(user?.email);
+        setTotpSecret(result.secretCode);
+        setShowTotpSetup(true);
+      }
     } catch (error) {
       console.error('Failed to setup MFA:', error);
       alert('Failed to setup MFA. Please try again.');
     }
+  };
+
+  const generateTotpSecret = () => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+    let secret = '';
+    for (let i = 0; i < 32; i++) {
+      secret += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return secret;
   };
 
   const verifyAndRegisterTotp = async () => {
@@ -51,8 +74,18 @@ function MfaSettings({ user, onBack }) {
     }
 
     try {
-      await verifyMFASetup(user?.email, totpCode);
-      await setMFAPreference(user?.email, true);
+      if (user?.isFederated) {
+        // Store MFA in localStorage for federated users
+        localStorage.setItem(`mfa_${user.email}`, JSON.stringify({
+          secret: totpSecret,
+          enabled: true,
+          timestamp: new Date().toISOString()
+        }));
+      } else {
+        await verifyMFASetup(user?.email, totpCode);
+        await setMFAPreference(user?.email, true);
+      }
+      
       setShowTotpSetup(false);
       setTotpCode('');
       loadMfaDevices();
@@ -66,7 +99,12 @@ function MfaSettings({ user, onBack }) {
   const removeTotpMfa = async () => {
     if (window.confirm('Are you sure you want to remove TOTP MFA?')) {
       try {
-        await setMFAPreference(user?.email, false);
+        if (user?.isFederated) {
+          // Remove from localStorage for federated users
+          localStorage.removeItem(`mfa_${user.email}`);
+        } else {
+          await setMFAPreference(user?.email, false);
+        }
         loadMfaDevices();
       } catch (error) {
         console.error('Failed to remove TOTP:', error);

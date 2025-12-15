@@ -16,11 +16,11 @@ function App() {
 
   const handleUsernameLogin = async (e) => {
     e.preventDefault();
-    const cognitoDomain = "https://ap-southeast-1gysqnwnf1.auth.ap-southeast-1.amazoncognito.com";
+    const cognitoDomain = "https://auth.nttdata-cs.com";
     const clientId = "5tai0tc43qpu5fq4l8hukmh9q3";
     const redirectUri = encodeURIComponent(window.location.origin);
     
-    const loginUrl = `${cognitoDomain}/login?client_id=${clientId}&response_type=code&scope=openid+email+profile&redirect_uri=${redirectUri}`;
+    const loginUrl = `${cognitoDomain}/login/continue?client_id=${clientId}&response_type=code&scope=aws.cognito.signin.user.admin+email+openid&redirect_uri=${redirectUri}`;
     window.location.href = loginUrl;
   };
 

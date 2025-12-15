@@ -112,11 +112,24 @@ export default function Home() {
                         <div className="mt-2">
                           <p className="text-xs text-gray-400">Groups:</p>
                           <div className="flex flex-wrap gap-1 mt-1">
+                            {/* Cognito Groups */}
                             {auth.user?.profile['cognito:groups']?.map((group: string) => (
                               <span key={group} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
                                 {group}
                               </span>
-                            )) || <span className="text-xs text-gray-400">No groups assigned</span>}
+                            ))}
+                            {/* ADFS Groups */}
+                            {auth.user?.profile['custom:adfs_groups']?.map((group: string) => {
+                              const decodedGroup = decodeURIComponent(group).replace(/.*\\/, '');
+                              return (
+                                <span key={group} className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
+                                  {decodedGroup}
+                                </span>
+                              );
+                            })}
+                            {(!auth.user?.profile['cognito:groups'] && !auth.user?.profile['custom:adfs_groups']) && 
+                              <span className="text-xs text-gray-400">No groups assigned</span>
+                            }
                           </div>
                         </div>
                       </div>
@@ -127,8 +140,13 @@ export default function Home() {
                 <div className="mb-6">
                   <h2 className="text-lg font-semibold text-gray-900 mb-4">Available Applications</h2>
                   <div className="grid gap-4">
-                    {/* NTTDATA-CS Portal - requires 'portal-users' group or 'admin-group' */}
-                    {(auth.user?.profile['cognito:groups']?.includes('portal-users') || auth.user?.profile['cognito:groups']?.includes('admin-group')) ? (
+                    {/* NTTDATA-CS Portal - requires 'portal-users' group or 'admin-group' or ADFS groups */}
+                    {(auth.user?.profile['cognito:groups']?.includes('portal-users') || 
+                      auth.user?.profile['cognito:groups']?.includes('admin-group') ||
+                      auth.user?.profile['custom:adfs_groups']?.some((group: string) => 
+                        decodeURIComponent(group).includes('Internal Application Users') || 
+                        decodeURIComponent(group).includes('Domain Users')
+                      )) ? (
                       <div className="bg-gradient-to-r from-blue-500 to-blue-700 rounded-lg p-6 text-white">
                         <div className="flex items-center justify-between">
                           <div>

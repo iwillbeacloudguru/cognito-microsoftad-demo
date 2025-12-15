@@ -480,9 +480,7 @@ export default function Home() {
 
                 {currentView === 'home' && (
                   <div>
-
-
-                {mfaEnabled && (
+                    {mfaEnabled && (
                   <div className="mb-6">
                     <h2 className="text-lg font-semibold text-gray-900 mb-2">Multi-Factor Authentication</h2>
                     <div className={theme.alert.success}>
@@ -648,15 +646,14 @@ export default function Home() {
                     </div>
                   </div>
                 )}
-
-
+                  </div>
+                )}
               </div>
             </div>
           </div>
         </div>
       </div>
     );
-    // ... Rest of the authenticated UI code ...
   }
 
   // Render login screen for unauthenticated users
@@ -699,6 +696,5 @@ export default function Home() {
         </div>
       </div>
     </div>
-    // ... Login screen UI code ...
   );
 }

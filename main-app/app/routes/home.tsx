@@ -143,7 +143,6 @@ export default function Home() {
     },
     "finance-dashboard": {
       "name": "Finance Dashboard",
-      "name": "Finance Dashboard", 
       "description": "Financial analytics and reporting",
       "color": "bg-blue-800",
       "cognitoGroups": ["finance-team", "admin-group"],

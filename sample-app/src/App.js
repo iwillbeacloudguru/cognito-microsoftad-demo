@@ -58,7 +58,8 @@ function App() {
             grant_type: 'authorization_code',
             client_id: clientId,
             code: code,
-            redirect_uri: redirectUri
+            redirect_uri: redirectUri,
+            scope: 'openid email profile aws.cognito.signin.user.admin'
           })
         });
         
@@ -525,7 +526,7 @@ function App() {
     const cognitoDomain = process.env.REACT_APP_COGNITO_DOMAIN;
     const clientId = process.env.REACT_APP_COGNITO_CLIENT_ID;
     const redirectUri = encodeURIComponent(window.location.origin);
-    const adfsLoginUrl = `${cognitoDomain}/login?client_id=${clientId}&response_type=code&scope=email+openid&redirect_uri=${redirectUri}`;
+    const adfsLoginUrl = `${cognitoDomain}/login?client_id=${clientId}&response_type=code&scope=openid+email+profile+aws.cognito.signin.user.admin&redirect_uri=${redirectUri}`;
     
     window.location.href = adfsLoginUrl;
   };

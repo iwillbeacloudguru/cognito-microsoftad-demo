@@ -1,6 +1,6 @@
 import { useAuth } from "react-oidc-context";
 import { useState, useEffect } from "react";
-import { CognitoIdentityProviderClient, AssociateSoftwareTokenCommand, VerifySoftwareTokenCommand, SetUserMFAPreferenceCommand } from "@aws-sdk/client-cognito-identity-provider";
+import { CognitoIdentityProviderClient, AssociateSoftwareTokenCommand, VerifySoftwareTokenCommand, SetUserMFAPreferenceCommand, GetUserCommand } from "@aws-sdk/client-cognito-identity-provider";
 import Navbar from "../components/Navbar";
 import { theme } from "../styles/theme";
 import type { Route } from "./+types/mfa";
@@ -18,23 +18,31 @@ export default function MFA() {
   const [mfaEnabled, setMfaEnabled] = useState(false);
 
   useEffect(() => {
-    console.log('MFA Status Check:');
-    console.log('User profile:', auth.user?.profile);
-    console.log('phone_number_verified:', auth.user?.profile.phone_number_verified);
-    console.log('All profile keys:', Object.keys(auth.user?.profile || {}));
-    
-    if (auth.isAuthenticated) {
-      // Check multiple possible MFA indicators
-      const phoneVerified = auth.user?.profile.phone_number_verified;
-      const mfaEnabled = auth.user?.profile['custom:mfa_enabled'];
-      const softwareTokenMfa = auth.user?.profile['software_token_mfa_enabled'];
-      
-      console.log('MFA indicators:', { phoneVerified, mfaEnabled, softwareTokenMfa });
-      
-      if (phoneVerified || mfaEnabled || softwareTokenMfa) {
-        setMfaEnabled(true);
+    const checkMfaStatus = async () => {
+      if (auth.isAuthenticated && auth.user?.access_token) {
+        try {
+          const client = new CognitoIdentityProviderClient({ region: 'ap-southeast-1' });
+          const command = new GetUserCommand({
+            AccessToken: auth.user.access_token
+          });
+          const response = await client.send(command);
+          
+          // Check if MFA is enabled
+          const mfaOptions = response.MFAOptions || [];
+          const userMfaEnabled = response.UserMFASettingList?.includes('SOFTWARE_TOKEN_MFA');
+          
+          console.log('Cognito MFA Status:', { mfaOptions, userMfaEnabled, response });
+          
+          if (userMfaEnabled || mfaOptions.length > 0) {
+            setMfaEnabled(true);
+          }
+        } catch (error) {
+          console.error('Error checking MFA status:', error);
+        }
       }
-    }
+    };
+    
+    checkMfaStatus();
   }, [auth.isAuthenticated, auth.user]);
 
   const setupMFA = async () => {

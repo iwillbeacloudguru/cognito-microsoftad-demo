@@ -14,14 +14,8 @@ export const useMfa = (user) => {
     setLoading(true);
     try {
       if (user.isFederated) {
-        // Check backend for federated user MFA
-        const response = await fetch(`${process.env.REACT_APP_API_URL}/mfa/${encodeURIComponent(username)}`);
-        if (response.ok) {
-          const data = await response.json();
-          setMfaOptions(data.devices || []);
-        } else {
-          setMfaOptions([]);
-        }
+        // For federated users, assume no MFA initially (will be set up via app)
+        setMfaOptions([]);
       } else {
         const options = await getMFAOptions(username);
         setMfaOptions(options || []);
@@ -35,7 +29,10 @@ export const useMfa = (user) => {
   };
 
   const hasTotpDevice = user?.isFederated 
-    ? mfaOptions.some(option => option.device_type === 'totp' && option.is_active)
+    ? (() => {
+        const mfaData = localStorage.getItem(`mfa_${user.getUsername()}`);
+        return mfaData ? JSON.parse(mfaData).enabled : false;
+      })()
     : mfaOptions.some(option => 
         option.DeliveryMedium === 'SOFTWARE_TOKEN_MFA' || 
         option.AttributeName === 'SOFTWARE_TOKEN_MFA'

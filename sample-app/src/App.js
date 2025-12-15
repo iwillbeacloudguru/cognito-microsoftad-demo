@@ -174,19 +174,12 @@ function App() {
 
     try {
       if (user?.isFederated) {
-        // For federated users, store MFA in backend
-        const response = await fetch(`${process.env.REACT_APP_API_URL}/mfa`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            user_email: user.getUsername(),
-            device_type: 'totp',
-            totp_secret: totpSecret,
-            verification_code: totpCode
-          })
-        });
-        
-        if (!response.ok) throw new Error('Verification failed');
+        // For federated users, store MFA locally (demo purposes)
+        localStorage.setItem(`mfa_${user.getUsername()}`, JSON.stringify({
+          secret: totpSecret,
+          enabled: true,
+          timestamp: new Date().toISOString()
+        }));
       } else {
         await verifyMFASetup(user?.getUsername(), totpCode);
         await setMFAPreference(user?.getUsername(), true);

@@ -175,19 +175,7 @@ export default function Home() {
                     {/* NTTDATA-CS Portal - requires 'portal-users' group or 'admin-group' or ADFS groups */}
                     {(auth.user?.profile['cognito:groups']?.includes('portal-users') || 
                       auth.user?.profile['cognito:groups']?.includes('admin-group') ||
-                      (() => {
-                        const adfsGroups = auth.user?.profile['custom:adfs_groups'];
-                        if (!adfsGroups) return false;
-                        
-                        const groupsArray: string[] = typeof adfsGroups === 'string' 
-                          ? adfsGroups.split(',').map(g => g.trim())
-                          : Array.isArray(adfsGroups) ? adfsGroups : [];
-                        
-                        return groupsArray.some((group: string) => 
-                          decodeURIComponent(group).includes('Internal Application Users') || 
-                          decodeURIComponent(group).includes('Domain Users')
-                        );
-                      })()) ? (
+                      auth.user?.profile['cognito:groups']?.some((group: string) => group.includes('ms-adfs'))) ? (
                       <div className="bg-gradient-to-r from-blue-500 to-blue-700 rounded-lg p-6 text-white">
                         <div className="flex items-center justify-between">
                           <div>

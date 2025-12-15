@@ -28,14 +28,9 @@ export default function Navbar({
         </div>
         
         <div className="flex items-center space-x-4">
-          {mfaEnabled && (
-            <button
-              onClick={() => setShowMfaManage(!showMfaManage)}
-              className="text-blue-100 hover:text-white text-sm"
-            >
-              MFA
-            </button>
-          )}
+          <a href="/mfa" className="text-blue-100 hover:text-white text-sm">
+            Profile
+          </a>
           
           <button
             onClick={() => setShowTokens(!showTokens)}

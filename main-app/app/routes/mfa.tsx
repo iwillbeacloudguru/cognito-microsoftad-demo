@@ -1,0 +1,164 @@
+import { useAuth } from "react-oidc-context";
+import { useState } from "react";
+import { CognitoIdentityProviderClient, AssociateSoftwareTokenCommand, VerifySoftwareTokenCommand, SetUserMFAPreferenceCommand } from "@aws-sdk/client-cognito-identity-provider";
+import Navbar from "../components/Navbar";
+import type { Route } from "./+types/mfa";
+
+export function meta({}: Route.MetaArgs) {
+  return [
+    { title: "MFA Setup - Cognito Microsoft AD Demo" },
+    { name: "description", content: "Multi-Factor Authentication Setup" },
+  ];
+}
+
+export default function MFA() {
+  const auth = useAuth();
+  const [mfaSetup, setMfaSetup] = useState({ show: false, qrCode: '', secret: '', verificationCode: '' });
+  const [mfaEnabled, setMfaEnabled] = useState(false);
+
+  const setupMFA = async () => {
+    console.log('Starting MFA setup...');
+    try {
+      const client = new CognitoIdentityProviderClient({ region: 'ap-southeast-1' });
+      const command = new AssociateSoftwareTokenCommand({
+        AccessToken: auth.user?.access_token
+      });
+      const response = await client.send(command);
+      
+      const secret = response.SecretCode;
+      const qrCode = `otpauth://totp/CognitoDemo:${auth.user?.profile.email}?secret=${secret}&issuer=CognitoDemo`;
+      
+      setMfaSetup({ show: true, qrCode, secret: secret || '', verificationCode: '' });
+    } catch (error) {
+      console.error('MFA setup error:', error);
+    }
+  };
+
+  const verifyMFA = async () => {
+    console.log('Starting MFA verification...');
+    try {
+      const client = new CognitoIdentityProviderClient({ region: 'ap-southeast-1' });
+      
+      const verifyCommand = new VerifySoftwareTokenCommand({
+        AccessToken: auth.user?.access_token,
+        UserCode: mfaSetup.verificationCode
+      });
+      await client.send(verifyCommand);
+      
+      const preferenceCommand = new SetUserMFAPreferenceCommand({
+        AccessToken: auth.user?.access_token,
+        SoftwareTokenMfaSettings: { Enabled: true, PreferredMfa: true }
+      });
+      await client.send(preferenceCommand);
+      
+      setMfaSetup({ show: false, qrCode: '', secret: '', verificationCode: '' });
+      setMfaEnabled(true);
+      alert('MFA setup completed successfully!');
+    } catch (error) {
+      console.error('MFA verification error:', error);
+      alert('Invalid verification code. Please try again.');
+    }
+  };
+
+  if (!auth.isAuthenticated) {
+    return <div>Please sign in to access MFA settings.</div>;
+  }
+
+  return (
+    <div className="min-h-screen bg-blue-50">
+      <Navbar 
+        mfaEnabled={mfaEnabled}
+        showMfaManage={false}
+        setShowMfaManage={() => {}}
+        showTokens={false}
+        setShowTokens={() => {}}
+        onSignOut={() => {}}
+      />
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-2xl mx-auto">
+          <div className="bg-white rounded-lg shadow-lg p-6">
+            <h1 className="text-2xl font-bold text-gray-900 mb-6">Multi-Factor Authentication</h1>
+            
+            {!mfaEnabled && !mfaSetup.show && (
+              <div className="text-center">
+                <div className="mb-6">
+                  <svg className="h-16 w-16 mx-auto text-yellow-500 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                  <h2 className="text-xl font-semibold text-gray-900 mb-2">Setup Multi-Factor Authentication</h2>
+                  <p className="text-gray-600 mb-6">Secure your account with TOTP authentication</p>
+                </div>
+                <button
+                  onClick={setupMFA}
+                  className="bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700 text-lg"
+                >
+                  Setup MFA
+                </button>
+              </div>
+            )}
+
+            {mfaSetup.show && (
+              <div className="space-y-6">
+                <h2 className="text-xl font-semibold text-gray-900">Setup TOTP Authentication</h2>
+                
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">1. Scan QR Code</h3>
+                  <p className="text-gray-600 mb-4">Scan this QR code with your authenticator app:</p>
+                  <div className="bg-white p-4 rounded border inline-block">
+                    <img src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(mfaSetup.qrCode)}`} alt="QR Code" />
+                  </div>
+                </div>
+                
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">2. Manual Entry</h3>
+                  <p className="text-gray-600 mb-2">Or enter this secret manually:</p>
+                  <code className="bg-gray-100 px-3 py-2 rounded text-sm block">{mfaSetup.secret}</code>
+                </div>
+                
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">3. Verify Setup</h3>
+                  <p className="text-gray-600 mb-4">Enter the 6-digit code from your authenticator app:</p>
+                  <div className="flex space-x-3">
+                    <input
+                      type="text"
+                      value={mfaSetup.verificationCode}
+                      onChange={(e) => setMfaSetup({...mfaSetup, verificationCode: e.target.value})}
+                      placeholder="123456"
+                      className="border rounded px-3 py-2 w-32"
+                      maxLength={6}
+                    />
+                    <button
+                      onClick={verifyMFA}
+                      disabled={mfaSetup.verificationCode.length !== 6}
+                      className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 disabled:opacity-50"
+                    >
+                      Verify & Enable
+                    </button>
+                    <button
+                      onClick={() => setMfaSetup({ show: false, qrCode: '', secret: '', verificationCode: '' })}
+                      className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {mfaEnabled && (
+              <div className="text-center">
+                <div className="mb-6">
+                  <svg className="h-16 w-16 mx-auto text-green-500 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <h2 className="text-xl font-semibold text-green-800 mb-2">MFA is Active</h2>
+                  <p className="text-green-700">Your account is protected with TOTP authentication</p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

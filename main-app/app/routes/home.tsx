@@ -299,66 +299,7 @@ export default function Home() {
             <div className="bg-white rounded-lg shadow-lg overflow-hidden">
               
               <div className="p-6">
-                {needsMfaSetup && (
-                  <div className="mb-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="text-sm font-medium text-yellow-800">Setup Multi-Factor Authentication</h3>
-                        <p className="text-sm text-yellow-700">Secure your account with TOTP authentication</p>
-                      </div>
-                      <button
-                        onClick={setupMFA}
-                        className="bg-yellow-600 text-white px-3 py-1 rounded text-sm hover:bg-yellow-700"
-                      >
-                        Setup MFA
-                      </button>
-                    </div>
-                  </div>
-                )}
 
-                {mfaSetup.show && (
-                  <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <h3 className="text-lg font-medium text-blue-900 mb-4">Setup TOTP Authentication</h3>
-                    <div className="space-y-4">
-                      <div>
-                        <p className="text-sm text-blue-700 mb-2">1. Scan this QR code with your authenticator app:</p>
-                        <div className="bg-white p-4 rounded border inline-block">
-                          <img src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(mfaSetup.qrCode)}`} alt="QR Code" />
-                        </div>
-                      </div>
-                      <div>
-                        <p className="text-sm text-blue-700 mb-2">2. Or enter this secret manually:</p>
-                        <code className="bg-gray-100 px-2 py-1 rounded text-sm">{mfaSetup.secret}</code>
-                      </div>
-                      <div>
-                        <p className="text-sm text-blue-700 mb-2">3. Enter the 6-digit code from your app:</p>
-                        <div className="flex space-x-2">
-                          <input
-                            type="text"
-                            value={mfaSetup.verificationCode}
-                            onChange={(e) => setMfaSetup({...mfaSetup, verificationCode: e.target.value})}
-                            placeholder="123456"
-                            className="border rounded px-3 py-2 text-sm w-24"
-                            maxLength={6}
-                          />
-                          <button
-                            onClick={verifyMFA}
-                            disabled={mfaSetup.verificationCode.length !== 6}
-                            className="bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700 disabled:opacity-50"
-                          >
-                            Verify
-                          </button>
-                          <button
-                            onClick={() => setMfaSetup({ show: false, qrCode: '', secret: '', verificationCode: '' })}
-                            className="bg-gray-500 text-white px-4 py-2 rounded text-sm hover:bg-gray-600"
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
 
                 <div className="mb-6">
                   <h2 className="text-lg font-semibold text-gray-900 mb-2">User Information</h2>
@@ -434,35 +375,7 @@ export default function Home() {
                   </div>
                 </div>
 
-                {mfaEnabled && (
-                  <div className="mb-6">
-                    <div className="flex items-center justify-between mb-3">
-                      <h2 className="text-lg font-semibold text-gray-900">Multi-Factor Authentication</h2>
-                      <button
-                        onClick={() => setShowMfaManage(!showMfaManage)}
-                        className="text-indigo-600 hover:text-indigo-800 text-sm font-medium"
-                      >
-                        {showMfaManage ? 'Hide' : 'Manage'} MFA
-                      </button>
-                    </div>
-                    
-                    {showMfaManage && (
-                      <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                        <div className="flex items-center space-x-3">
-                          <div className="h-8 w-8 bg-green-100 rounded-full flex items-center justify-center">
-                            <svg className="h-5 w-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                          </div>
-                          <div>
-                            <h3 className="text-sm font-medium text-green-800">MFA is Active</h3>
-                            <p className="text-sm text-green-700">Your account is protected with TOTP authentication</p>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
+
 
                 <div className="mb-6">
                   <h2 className="text-lg font-semibold text-gray-900 mb-4">Available Applications</h2>

@@ -16,9 +16,21 @@ services:
       context: ./hr-app
       dockerfile: Dockerfile
     ports:
-      - "3001:3000"
+      - "3001:3001"
     environment:
       - NODE_ENV=production
     container_name: cognito-hr-app
+    depends_on:
+      - main-app
+
+  finance-app:
+    build:
+      context: ./finance-app
+      dockerfile: Dockerfile
+    ports:
+      - "3002:3002"
+    environment:
+      - NODE_ENV=production
+    container_name: cognito-finance-app
     depends_on:
       - main-app

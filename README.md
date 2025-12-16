@@ -26,6 +26,13 @@ A multi-application system demonstrating AWS Cognito integration with Microsoft 
   - **ADFS Users**: Must have `hr-` or `human-resource` in email/username
   - **Cognito Users**: Must belong to `hr-users` or `admin-group` groups
 
+### [Finance App](./finance-app/README.md) (Port 3002)
+- Financial Management System with reporting and analytics
+- Budget management, expense tracking, and investment portfolio
+- **Access**: Finance department users only
+  - **ADFS Users**: Must have `finance-`, `accounting`, or `treasury` in email/username
+  - **Cognito Users**: Must belong to `finance-users`, `accounting-group`, or `admin-group` groups
+
 ## ⚡ Quick Start
 
 ### Using Docker Compose (Recommended)
@@ -53,6 +60,11 @@ npm run dev
 cd hr-app
 npm install
 npm run dev
+
+# Finance App (in another terminal)
+cd finance-app
+npm install
+npm run dev
 ```
 
 ## 📚 Documentation
@@ -65,6 +77,7 @@ npm run dev
 ### Application Guides
 - [🔐 Main App Documentation](./main-app/README.md) - Authentication portal
 - [👥 HR App Documentation](./hr-app/README.md) - HR management system
+- [💰 Finance App Documentation](./finance-app/README.md) - Financial management system
 
 ### Additional Resources
 - [🐳 Docker Configuration](./docker-compose.yml) - Container setup
@@ -82,6 +95,10 @@ cognito-microsoftad-demo/
 │   ├── app/                  # React Router application
 │   ├── Dockerfile           # Container configuration
 │   └── README.md            # HR app documentation
+├── finance-app/              # Financial management system (Port 3002)
+│   ├── app/                  # React Router application
+│   ├── Dockerfile           # Container configuration
+│   └── README.md            # Finance app documentation
 ├── docs/                     # Project documentation
 │   ├── SETUP.md             # Setup and configuration guide
 │   ├── ARCHITECTURE.md      # System architecture
@@ -96,27 +113,28 @@ cognito-microsoftad-demo/
 |---------|-----|-------------|
 | Main App | http://localhost:3000 | Authentication portal |
 | HR App | http://localhost:3001 | HR management system |
+| Finance App | http://localhost:3002 | Financial management system |
 | Cognito Domain | https://auth.nttdata-cs.com | Authentication endpoint |
 | Logout Redirect | https://demo.nttdata-cs.com | Post-logout landing |
 
 ## 🏗️ Architecture Overview
 
 ```
-┌─────────────────┐    ┌─────────────────┐
-│   Main App      │    │    HR App       │
-│   (Port 3000)   │    │   (Port 3001)   │
-│                 │    │                 │
-│ - Auth Portal   │    │ - HR Dashboard  │
-│ - App Launcher  │    │ - Employee Mgmt │
-│ - User Profile  │    │ - Leave System  │
-└─────────────────┘    └─────────────────┘
-         │                       │
-         └───────────────────────┘
-                     │
-         ┌─────────────────────────┐
-         │   AWS Cognito +         │
-         │   Microsoft AD          │
-         └─────────────────────────┘
+┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐
+│   Main App      │  │    HR App       │  │  Finance App    │
+│   (Port 3000)   │  │   (Port 3001)   │  │   (Port 3002)   │
+│                 │  │                 │  │                 │
+│ - Auth Portal   │  │ - HR Dashboard  │  │ - Finance Dash  │
+│ - App Launcher  │  │ - Employee Mgmt │  │ - Budget Mgmt   │
+│ - User Profile  │  │ - Leave System  │  │ - Expense Track │
+└─────────────────┘  └─────────────────┘  └─────────────────┘
+         │                       │                       │
+         └───────────────────────┼───────────────────────┘
+                                 │
+                 ┌─────────────────────────┐
+                 │   AWS Cognito +         │
+                 │   Microsoft AD          │
+                 └─────────────────────────┘
 ```
 
 ## 🤝 Contributing

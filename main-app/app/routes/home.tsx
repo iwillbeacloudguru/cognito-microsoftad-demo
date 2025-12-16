@@ -563,9 +563,11 @@ export default function Home() {
                               <p className="text-blue-100 mb-4">{app.description}</p>
                               <button 
                                 onClick={() => {
+                                  const token = auth.user?.id_token;
                                   if (appKey === 'hr-system') {
-                                    const token = auth.user?.id_token;
                                     window.open(`https://hr.nttdata-cs.com?token=${token}`, '_blank');
+                                  } else if (appKey === 'finance-dashboard') {
+                                    window.open(`https://finance.nttdata-cs.com?token=${token}`, '_blank');
                                   }
                                 }}
                                 className="bg-white text-blue-600 px-4 py-2 rounded-md font-medium hover:bg-blue-50 transition duration-200"

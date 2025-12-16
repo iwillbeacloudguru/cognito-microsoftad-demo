@@ -19,6 +19,7 @@ services:
       - "3001:3001"
     environment:
       - NODE_ENV=production
+      - PORT=3001
     container_name: cognito-hr-app
     depends_on:
       - main-app
@@ -31,6 +32,7 @@ services:
       - "3002:3002"
     environment:
       - NODE_ENV=production
+      - PORT=3002
     container_name: cognito-finance-app
     depends_on:
       - main-app

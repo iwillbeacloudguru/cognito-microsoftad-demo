@@ -16,4 +16,5 @@ COPY --from=production-dependencies-env /app/node_modules /app/node_modules
 COPY --from=build-env /app/build /app/build
 COPY --from=build-env /app/package.json /app/package.json
 WORKDIR /app
+ENV PORT=3001
 CMD ["npm", "start"]

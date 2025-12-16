@@ -1,17 +1,20 @@
+// OIDC callback handler - processes authentication response from Cognito
 import { useAuth } from "react-oidc-context";
 import { useEffect } from "react";
 import { useNavigate } from "react-router";
 
 export default function Callback() {
-  const auth = useAuth();
-  const navigate = useNavigate();
+  const auth = useAuth(); // OIDC authentication context
+  const navigate = useNavigate(); // React Router navigation
 
+  // Redirect to home after successful authentication
   useEffect(() => {
     if (auth.isAuthenticated) {
       navigate("/");
     }
   }, [auth.isAuthenticated, navigate]);
 
+  // Authentication error display with user-friendly message
   if (auth.error) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-red-50 to-pink-100 flex items-center justify-center">
@@ -36,6 +39,7 @@ export default function Callback() {
     );
   }
 
+  // Loading state while OIDC processes authentication callback
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
       <div className="text-center">

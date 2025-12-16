@@ -1,3 +1,4 @@
+// Standalone MFA setup page (deprecated - now integrated into home.tsx SPA)
 import { useAuth } from "react-oidc-context";
 import { useState, useEffect } from "react";
 import { CognitoIdentityProviderClient, AssociateSoftwareTokenCommand, VerifySoftwareTokenCommand, SetUserMFAPreferenceCommand, GetUserCommand } from "@aws-sdk/client-cognito-identity-provider";
@@ -5,6 +6,7 @@ import Navbar from "../components/Navbar";
 import { theme } from "../styles/theme";
 import type { Route } from "./+types/mfa";
 
+// Page metadata for SEO and browser title
 export function meta({}: Route.MetaArgs) {
   return [
     { title: "MFA Setup - Cognito Microsoft AD Demo" },
@@ -13,22 +15,21 @@ export function meta({}: Route.MetaArgs) {
 }
 
 export default function MFA() {
-  const auth = useAuth();
-  const [mfaSetup, setMfaSetup] = useState({ show: false, qrCode: '', secret: '', verificationCode: '' });
-  const [mfaEnabled, setMfaEnabled] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const auth = useAuth(); // OIDC authentication context
+  const [mfaSetup, setMfaSetup] = useState({ show: false, qrCode: '', secret: '', verificationCode: '' }); // MFA setup flow state
+  const [mfaEnabled, setMfaEnabled] = useState(false); // Current MFA status
+  const [loading, setLoading] = useState(true); // Loading state for async operations
 
+  // Check current MFA status from Cognito on component mount
   useEffect(() => {
     const checkMfaStatus = async () => {
       if (auth.isAuthenticated && auth.user?.access_token) {
         try {
           const client = new CognitoIdentityProviderClient({ region: 'ap-southeast-1' });
-          const command = new GetUserCommand({
-            AccessToken: auth.user.access_token
-          });
+          const command = new GetUserCommand({ AccessToken: auth.user.access_token });
           const response = await client.send(command);
           
-          // Check if MFA is enabled
+          // Detect TOTP MFA enablement
           const mfaOptions = response.MFAOptions || [];
           const userMfaEnabled = response.UserMFASettingList?.includes('SOFTWARE_TOKEN_MFA');
           
@@ -50,13 +51,12 @@ export default function MFA() {
     checkMfaStatus();
   }, [auth.isAuthenticated, auth.user]);
 
+  // Generate TOTP secret and QR code for authenticator app setup
   const setupMFA = async () => {
     console.log('Starting MFA setup...');
     try {
       const client = new CognitoIdentityProviderClient({ region: 'ap-southeast-1' });
-      const command = new AssociateSoftwareTokenCommand({
-        AccessToken: auth.user?.access_token
-      });
+      const command = new AssociateSoftwareTokenCommand({ AccessToken: auth.user?.access_token });
       const response = await client.send(command);
       
       const secret = response.SecretCode;
@@ -68,17 +68,20 @@ export default function MFA() {
     }
   };
 
+  // Verify TOTP code and enable MFA preference in Cognito
   const verifyMFA = async () => {
     console.log('Starting MFA verification...');
     try {
       const client = new CognitoIdentityProviderClient({ region: 'ap-southeast-1' });
       
+      // Validate the 6-digit TOTP code
       const verifyCommand = new VerifySoftwareTokenCommand({
         AccessToken: auth.user?.access_token,
         UserCode: mfaSetup.verificationCode
       });
       await client.send(verifyCommand);
       
+      // Set TOTP as preferred MFA method
       const preferenceCommand = new SetUserMFAPreferenceCommand({
         AccessToken: auth.user?.access_token,
         SoftwareTokenMfaSettings: { Enabled: true, PreferredMfa: true }
@@ -94,10 +97,12 @@ export default function MFA() {
     }
   };
 
+  // Require authentication to access MFA settings
   if (!auth.isAuthenticated) {
     return <div>Please sign in to access MFA settings.</div>;
   }
 
+  // MFA setup page UI with three states: setup prompt, configuration flow, enabled status
   return (
     <div className={theme.layout.page}>
       <Navbar 
@@ -120,6 +125,7 @@ export default function MFA() {
               <h1 className="text-2xl font-bold text-gray-900">Multi-Factor Authentication</h1>
             </div>
             
+            {/* Loading skeleton while checking MFA status */}
             {loading && (
               <div className="animate-pulse">
                 <div className="h-4 bg-gray-200 rounded w-3/4 mb-4"></div>
@@ -129,6 +135,7 @@ export default function MFA() {
               </div>
             )}
             
+            {/* MFA setup prompt for users without MFA */}
             {!loading && !mfaEnabled && !mfaSetup.show && (
               <div className="text-center">
                 <div className="mb-6">
@@ -147,6 +154,7 @@ export default function MFA() {
               </div>
             )}
 
+            {/* Three-step MFA setup flow: QR code, manual entry, verification */}
             {mfaSetup.show && (
               <div className="space-y-6">
                 <h2 className="text-xl font-semibold text-gray-900">Setup TOTP Authentication</h2>
@@ -195,6 +203,7 @@ export default function MFA() {
               </div>
             )}
 
+            {/* MFA enabled status and security information */}
             {!loading && mfaEnabled && (
               <div>
                 <div className={`${theme.alert.success} mb-6`}>

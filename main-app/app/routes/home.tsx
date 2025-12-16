@@ -18,32 +18,27 @@ export function meta({}: Route.MetaArgs) {
 }
 
 export default function Home() {
-  // Hook to access authentication context
-  const auth = useAuth();
-  // State to control visibility of authentication tokens
-  const [showTokens, setShowTokens] = useState(false);
-  // MFA setup states
-  const [mfaSetup, setMfaSetup] = useState({ show: false, qrCode: '', secret: '', verificationCode: '' });
-  const [mfaEnabled, setMfaEnabled] = useState(false);
-  const [showMfaManage, setShowMfaManage] = useState(false);
-  // SPA view state
-  const [currentView, setCurrentView] = useState('home');
-  const [loading, setLoading] = useState(true);
+  // Authentication and UI state management
+  const auth = useAuth(); // OIDC authentication context
+  const [showTokens, setShowTokens] = useState(false); // Toggle token visibility
+  const [mfaSetup, setMfaSetup] = useState({ show: false, qrCode: '', secret: '', verificationCode: '' }); // MFA setup flow
+  const [mfaEnabled, setMfaEnabled] = useState(false); // MFA status from Cognito
+  const [showMfaManage, setShowMfaManage] = useState(false); // MFA management UI
+  const [currentView, setCurrentView] = useState('home'); // SPA navigation (home/mfa)
+  const [loading, setLoading] = useState(true); // Loading state for async operations
 
-  // Handle stale authentication states
+  // Authentication error handling - clears stale OIDC state
   useEffect(() => {
     if (auth.error && auth.error.message.includes("No matching state found")) {
-      // Clear URL parameters and stale state when auth state mismatch occurs
       window.history.replaceState({}, document.title, window.location.pathname);
       auth.clearStaleState();
     }
   }, [auth.error]);
 
-  // Cross-tab session synchronization
+  // Cross-tab logout synchronization via localStorage events
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'logout-event') {
-        // Another tab logged out, clear this tab's session
         auth.removeUser();
         window.location.reload();
       }
@@ -53,21 +48,18 @@ export default function Home() {
     return () => window.removeEventListener('storage', handleStorageChange);
   }, [auth]);
 
-  // Check MFA status on load
+  // Fetch MFA status from Cognito on authentication
   useEffect(() => {
     const checkMfaStatus = async () => {
       if (auth.isAuthenticated && auth.user?.access_token) {
         try {
           const client = new CognitoIdentityProviderClient({ region: 'ap-southeast-1' });
-          const command = new GetUserCommand({
-            AccessToken: auth.user.access_token
-          });
+          const command = new GetUserCommand({ AccessToken: auth.user.access_token });
           const response = await client.send(command);
           
-          const mfaOptions = response.MFAOptions || [];
+          // Check if TOTP MFA is enabled
           const userMfaEnabled = response.UserMFASettingList?.includes('SOFTWARE_TOKEN_MFA');
-          
-          if (userMfaEnabled || mfaOptions.length > 0) {
+          if (userMfaEnabled || (response.MFAOptions || []).length > 0) {
             setMfaEnabled(true);
           }
         } catch (error) {
@@ -83,38 +75,28 @@ export default function Home() {
     checkMfaStatus();
   }, [auth.isAuthenticated, auth.user]);
 
-  /**
-   * Handles user sign out process
-   * 1. Removes local user session
-   * 2. Revokes tokens at Cognito
-   * 3. Redirects to logout URL
-   */
+  // Complete logout: local session + Cognito token revocation + cross-tab sync
   const signOutRedirect = async () => {
     try {
-      // Broadcast logout to all tabs
+      // Notify other tabs of logout
       localStorage.setItem('logout-event', Date.now().toString());
       localStorage.removeItem('logout-event');
       
-      // Clear local session first
-      await auth.removeUser();
+      await auth.removeUser(); // Clear local OIDC session
       
-      // Revoke tokens at Cognito
-      // Cognito configuration for logout
+      // Redirect to Cognito logout endpoint for server-side session cleanup
       const cognitoDomain = "https://auth.nttdata-cs.com";
       const clientId = "5tai0tc43qpu5fq4l8hukmh9q3";
       const logoutUri = "https://demo.nttdata-cs.com";
       
-      // Use Cognito's logout endpoint which revokes sessions
       window.location.href = `${cognitoDomain}/logout?client_id=${clientId}&logout_uri=${encodeURIComponent(logoutUri)}&response_type=code`;
     } catch (error) {
       console.error('Error during signout:', error);
-      // Fallback to direct redirect
-      // Fallback to direct redirect on error
-      window.location.href = "https://demo.nttdata-cs.com";
+      window.location.href = "https://demo.nttdata-cs.com"; // Fallback redirect
     }
   };
 
-  // Loading state UI
+  // Loading skeleton while OIDC initializes
   if (auth.isLoading) {
     return (
       <div className={theme.layout.page}>
@@ -138,9 +120,9 @@ export default function Home() {
     );
   }
 
-  // Error state handling
+  // Authentication error states with user-friendly messages
   if (auth.error) {
-    // Handle expired session error
+    // Expired/invalid OIDC session
     if (auth.error.message.includes("No matching state found")) {
       return (
         <div className="min-h-screen bg-red-50 flex items-center justify-center">
@@ -164,7 +146,7 @@ export default function Home() {
         </div>
       );
     }
-    // Handle other authentication errors
+    // Generic authentication errors
     return (
       <div className="min-h-screen bg-red-50 flex items-center justify-center">
         <div className="bg-white p-8 rounded-lg shadow-lg max-w-md w-full mx-4">
@@ -177,8 +159,7 @@ export default function Home() {
     );
   }
 
-  // Application-Group mapping configuration
-  // Application access control configuration
+  // Application access control matrix: maps apps to required groups/patterns
   const appConfig = {
     "hr-system": {
       "name": "HR Management",
@@ -206,58 +187,45 @@ export default function Home() {
     }
   };
 
-  // Function to check if user has access to an application
-  /**
-   * Checks if current user has access to a specific application
-   * Handles both ADFS and Cognito authentication sources
-   * @param appKey - Key of the application to check access for
-   * @returns boolean indicating if user has access
-   */
+  // Access control logic: ADFS users by email patterns, Cognito users by groups
   const hasAccess = (appKey: string) => {
     const app = appConfig[appKey as keyof typeof appConfig];
     if (!app) return false;
 
-    // First check: Is user from ADFS or Cognito?
-    // Determine if user is authenticated via ADFS
+    // Detect ADFS vs Cognito user by group identifier
     const isAdfsUser = auth.user?.profile['cognito:groups']?.some((group: string) => 
       group.includes('ap-southeast-1_gYsQnwNf1_ms-adfs')
     );
 
     if (isAdfsUser) {
-      // User is from ADFS - check user patterns or ADFS groups
-      // ADFS user access logic
+      // ADFS: Check email/username patterns
       const userEmail = auth.user?.profile.email || '';
       const username = auth.user?.profile['cognito:username'] || '';
       const userText = `${userEmail} ${username}`.toLowerCase();
       
-      // Check if user matches any pattern
-      // Check user patterns
       const matchesPattern = app.adfsUserPatterns?.some(pattern => 
         userText.includes(pattern.toLowerCase())
       );
       
-      // Check if user has specific ADFS groups (if available)
-      // Check ADFS groups
       const hasAdfsGroup = app.adfsGroups?.some(adfsGroup => 
         auth.user?.profile['custom:adfs_groups']?.includes(adfsGroup)
       );
       
       return matchesPattern || hasAdfsGroup;
     } else {
-      // User is from Cognito pool - check cognito groups
-      // Cognito user access logic
+      // Cognito: Check assigned groups
       return app.cognitoGroups?.some(group => 
         auth.user?.profile['cognito:groups']?.includes(group)
       ) || false;
     }
   };
 
-  // Check if user needs MFA setup (Cognito users only)
+  // MFA requirement check: Cognito users without MFA enabled
   const needsMfaSetup = auth.isAuthenticated && 
     !auth.user?.profile['cognito:groups']?.some((group: string) => group.includes('ms-adfs')) &&
     !mfaEnabled;
 
-  // MFA Setup Functions
+  // TOTP MFA setup: generates secret and QR code for authenticator apps
   const setupMFA = async () => {
     console.log('Starting MFA setup...');
     console.log('Access token available:', !!auth.user?.access_token);
@@ -285,6 +253,7 @@ export default function Home() {
     }
   };
 
+  // MFA verification: validates TOTP code and enables MFA preference
   const verifyMFA = async () => {
     console.log('Starting MFA verification...');
     console.log('Verification code:', mfaSetup.verificationCode);
@@ -321,7 +290,7 @@ export default function Home() {
     }
   };
 
-  // Render authenticated user interface
+  // Main authenticated UI with SPA navigation between home and MFA views
   if (auth.isAuthenticated) {
     return (
       <div className={theme.layout.page}>
@@ -340,6 +309,7 @@ export default function Home() {
             <div className={theme.card}>
               
               <div className="p-6">
+                {/* MFA Management View */}
                 {currentView === 'mfa' && (
                   <div>
                     <div className="flex items-center mb-6">
@@ -478,8 +448,10 @@ export default function Home() {
                   </div>
                 )}
 
+                {/* Home Dashboard View */}
                 {currentView === 'home' && (
                   <div>
+                    {/* MFA Status Indicator */}
                     {mfaEnabled && (
                   <div className="mb-6">
                     <h2 className="text-lg font-semibold text-gray-900 mb-2">Multi-Factor Authentication</h2>
@@ -499,6 +471,7 @@ export default function Home() {
                   </div>
                 )}
 
+                {/* User Profile Information */}
                 <div className="mb-6">
                   <h2 className="text-lg font-semibold text-gray-900 mb-2">User Information</h2>
                   <div className="bg-gray-50 rounded-lg p-4">
@@ -575,6 +548,7 @@ export default function Home() {
 
 
 
+                {/* Application Launcher with Access Control */}
                 <div className="mb-6">
                   <h2 className="text-lg font-semibold text-gray-900 mb-4">Available Applications</h2>
                   <div className="grid gap-4">
@@ -621,6 +595,7 @@ export default function Home() {
                   </div>
                 </div>
 
+                {/* Authentication Tokens Display */}
                 {showTokens && (
                   <div className="mb-6">
                     <h2 className="text-lg font-semibold text-gray-900 mb-4">Authentication Tokens</h2>
@@ -656,7 +631,7 @@ export default function Home() {
     );
   }
 
-  // Render login screen for unauthenticated users
+  // Login screen for unauthenticated users
   return (
     <div className="min-h-screen bg-indigo-50 flex items-center justify-center">
       <div className="max-w-md w-full mx-4">
